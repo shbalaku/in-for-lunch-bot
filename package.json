@@ -19,8 +19,9 @@
   "homepage": "https://github.com/shbalaku/in-for-lunch-bot#readme",
   "dependencies": {
     "botkit": "0.6.0",
-    "ciscospark": "^1.59.0",
-    "dotenv": "^6.2.0",
-    "node-env-file": "^0.1.8"
+    "node-ciscospark": "^1.0.3",
+    "node-env-file": "^0.1.8",
+    "pg": "^7.11.0",
+    "q": "^1.5.1"
   }
 }
