@@ -1,10 +1,7 @@
-// Helper Functions for Lunch Group Services
+// Helper Functions for Create Lunch Group Services
 const Q = require('q');
 const CiscoSpark = require('node-ciscospark');
 const spark = new CiscoSpark(process.env.SPARK_TOKEN);
-
-/* LOAD CLIENTS/MODULES */
-const PostgreSQL = require('./../../postgres');
 
 var service = {};
 
@@ -44,16 +41,14 @@ function validateCECs(cecs) {
 
 /* Helper function to format group members from array to JSON entries in PostgreSQL */
 function FormatMembers(admin, members) {
-  var json_members = {
-    members: []
-  };
+  var json_members = [];
   for (var idx = 0; idx < members.length; idx++) {
     var member = {
       cec: members[idx],
-      status: (admin.cec == members[idx]) ? 'accepted' : 'pending',
-      admin: (admin.cec == members[idx]) ? true : false
+      status: (admin.cec != members[idx]) ? 'accepted' : 'pending',
+      admin: (admin.cec != members[idx]) ? true : false
     };
-    json_members.members.push(member);
+    json_members.push(member);
   }
   return json_members;
 }

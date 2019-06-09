@@ -1,4 +1,4 @@
-// Lunch Group Services
+// Create Lunch Group Services
 const Q = require('q');
 
 /* LOAD CLIENTS/MODULES */
@@ -35,7 +35,7 @@ async function CreateGroup(query) {
     const group = {
       name: validity_resp.group_name,
       admin: group_admin,
-      members: group_members.members
+      members: group_members
     };
     // Establish client POSTGRESQL
     const client = PostgreSQL.CreateClient();
@@ -46,7 +46,7 @@ async function CreateGroup(query) {
       client.query('SELECT * FROM lunch_groups WHERE name = $1', [group.name], function(err, res) {
         if (err) throw err;
         if (res.rows.length == 0) {
-          client.query('INSERT INTO lunch_groups VALUES ($1, $2);', [group.name, group_members], function(err) {
+          client.query('INSERT INTO lunch_groups VALUES ($1, $2);', [group.name, group.members], function(err) {
             if (err) throw err;
             client.end(function(err) {
               if (err) throw err;

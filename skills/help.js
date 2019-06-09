@@ -10,6 +10,9 @@ function Controller(controller) {
     text += "\n- **Create lunch group**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "group <group_name> <cec1> <cec2> ...") +
       " E.g. group hogwarts hpotter rweasley. Two or more CECs required (including your own).";
+    text += "\n- **Join lunch group**" + "\n" + "    * " +
+      "Usage: " + bot.appendMention(message, "join <group_name>") +
+      " E.g. join hogwarts.";
     text += "\n\nHelp will always be given at Hogwarts to those who deserve it.";
     bot.reply(message, text);
   });
