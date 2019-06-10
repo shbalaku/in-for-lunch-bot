@@ -13,6 +13,8 @@ function Controller(controller) {
     text += "\n- **Join lunch group**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "join <group_name>") +
       " E.g. join hogwarts.";
+    text += "\n- **List lunch groups**" + "\n" + "    * " +
+      "Usage: " + bot.appendMention(message, "list");
     text += "\n\nHelp will always be given at Hogwarts to those who deserve it.";
     bot.reply(message, text);
   });

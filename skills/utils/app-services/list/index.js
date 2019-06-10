@@ -1,4 +1,4 @@
-// Join Lunch Group Services
+// List Lunch Groups Services
 const Q = require('q');
 
 /* LOAD CLIENTS/MODULES */
@@ -6,21 +6,21 @@ const HelperService = require('./helper');
 
 var service = {};
 
-service.JoinGroup = JoinGroup;
+service.List = List;
 
 module.exports = service;
 
 /* ENVIRONMENT VARIABLES */
 const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN;
 
-/* Function which allows user to join group */
-function JoinGroup(message) {
+/* Function which lists all of the requestor's lunch groups */
+function List(message) {
   var deferred = Q.defer();
   var user_cec = message.data.personEmail.split(EMAIL_DOMAIN)[0];
-  var request = message.match[1];
-  HelperService.ValidateInput(request, user_cec)
-    .then(function(resp) {
-      deferred.resolve(resp);
+  HelperService.GetGroupsByCEC(user_cec)
+    .then(function(groups) {
+      var text = HelperService.BuildText(groups);
+      deferred.resolve(text);
     })
     .catch(function(error) {
       deferred.reject(error);
