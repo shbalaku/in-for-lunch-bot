@@ -67,7 +67,7 @@ function ValidateInput(input) {
       var cecs = input_arr.slice(1, input_arr.length);
       valid_members = await validateCECs(cecs);
       // Members validation cases
-      if (valid_members.length < 1) {
+      if (valid_members.length < 2) {
         response.valid = false;
         response.message = 'Two or more valid CECs are required. Please check your inputs and try again.';
       } else {
