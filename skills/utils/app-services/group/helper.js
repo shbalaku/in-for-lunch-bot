@@ -45,8 +45,8 @@ function FormatMembers(admin, members) {
   for (var idx = 0; idx < members.length; idx++) {
     var member = {
       cec: members[idx],
-      status: (admin.cec != members[idx]) ? 'accepted' : 'pending',
-      admin: (admin.cec != members[idx]) ? true : false
+      status: (admin.cec == members[idx]) ? 'accepted' : 'pending',
+      admin: (admin.cec == members[idx]) ? true : false
     };
     json_members.push(member);
   }
