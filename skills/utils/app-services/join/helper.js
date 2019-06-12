@@ -86,9 +86,9 @@ function validateRequestor(requestor_cec, group) {
 }
 
 /* Helper function to sanitise input and check if user has been invited to group */
-function ValidateInput(request, requestor_cec) {
+function ValidateInput(input, requestor_cec) {
   var deferred = Q.defer();
-  var group_name = request.trim().replace(/[^\x00-\x7F]/g, "");
+  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "");
   CommonService.GetGroup(group_name)
     .then(function(group) {
       validateRequestor(requestor_cec, group)

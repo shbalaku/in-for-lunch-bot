@@ -18,8 +18,8 @@ const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN;
 function PollGroup(bot, message) {
   var deferred = Q.defer();
   var requestor_cec = message.data.personEmail.split(EMAIL_DOMAIN)[0];
-  var request = message.match[1];
-  HelperService.ValidateInput(request, requestor_cec)
+  var input = message.match[1];
+  HelperService.ValidateInput(input, requestor_cec)
     .then(async function(group) {
       var requestor_details = await CommonService.GetPersonByCEC(requestor_cec);
       var requestor = requestor_details.items[0];

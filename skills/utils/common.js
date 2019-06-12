@@ -10,6 +10,7 @@ var service = {};
 
 service.GetGroup = GetGroup;
 service.GetPersonByCEC = GetPersonByCEC;
+service.GetPollByGroup = GetPollByGroup;
 
 module.exports = service;
 
@@ -52,6 +53,26 @@ function GetPersonByCEC(cec) {
     spark.people.list(personEmail, function(err, res) {
       if (err) throw err;
       resolve(JSON.parse(res));
+    });
+  });
+}
+
+/* Helper function to obtain any polls in group table for a specific group */
+function GetPollByGroup(group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // select lunch group entry with group name
+      client.query('SELECT poll FROM lunch_groups WHERE name = $1', [group_name], function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          var poll = res.rows[0].poll;
+          resolve(poll);
+        });
+      });
     });
   });
 }

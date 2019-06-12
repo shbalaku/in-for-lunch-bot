@@ -27,6 +27,71 @@ function validateRequestor(requestor_cec, group) {
   return deferred.promise;
 }
 
+/* Helper function to clear poll column for a group */
+function clearPoll(group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // select lunch group entry with group name
+      client.query('UPDATE lunch_groups SET poll=$1', [null], function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          resolve('cleared');
+        });
+      });
+    });
+  });
+}
+
+/* Helper function to check if any polls are in progress in group */
+async function validatePoll(group) {
+  var deferred = Q.defer();
+  // Check if everyone in the group has joined before poll starts
+  var pending = group.members.filter(member => member.status == 'pending');
+  if (pending.length > 0) {
+    deferred.reject('Everyone in the group must join before you start a poll.');
+  } else {
+    // Check on existing polls
+    var poll = await CommonService.GetPollByGroup(group.name);
+    if (poll == null) {
+      deferred.resolve(true);
+    } else {
+      var group_members_total = group.members.length;
+      var finished_poll = poll.filter(poll_result => poll_result.finished_poll);
+      (finished_poll.length != group_members_total) ? deferred.reject('A poll is currently in progress. ' +
+      'You must wait until the poll completes to start a new poll.') : await clearPoll(group.name);
+      deferred.resolve(true);
+    }
+  }
+  return deferred.promise;
+}
+
+/* Helper function to save poll result to PostgreSQL */
+function savePollResult(result, group_name) {
+  return new Promise(async resolve => {
+    result.finished_poll = true;
+    var poll = await CommonService.GetPollByGroup(group_name);
+    if (poll == null) poll = [];
+    poll.push(result);
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // select lunch group entry with group name
+      client.query('UPDATE lunch_groups SET poll=$1 WHERE name=$2', [poll, group_name], function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          resolve('saved');
+        });
+      });
+    });
+  });
+}
+
 /* Helper function to poll member */
 async function PollMember(requestor_name, member_cec, group_name, bot) {
   // Get member details
@@ -37,18 +102,27 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
   bot.startPrivateConversationWithPersonId(member.id, function(err, convo) {
     if (err) throw err;
 
+    // Initialise poll result object
+    var result = {
+      name: member.firstName,
+      cec: member_cec,
+      in_the_office: false,
+      in_for_lunch: false,
+      comments: '',
+      finished_poll: false
+    };
+
     // Initial message
     if (member.firstName != requestor_name) {
       convo.sayFirst(requestor_name + ' started a poll for the ' + group_name + ' lunch group!');
     }
 
-    // In The Office Conversation thread
-    convo.addQuestion('Are you in the office today? YES or NO.',[
+    // In The Office Conversation thread - survey presence in office
+    convo.addQuestion('Are you in the office today? Reply with YES or NO.',[
       {
         pattern: bot.utterances.yes,
         callback: function(response,convo) {
-          // go to thread: In For Lunch
-          console.log(member.firstName + ' is in the office today.');
+          result.in_the_office = true;
           convo.gotoThread('in_for_lunch');
           convo.next();
         }
@@ -56,7 +130,7 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
       {
         pattern: bot.utterances.no,
         callback: function(response,convo) {
-          console.log(member.firstName + ' is NOT in the office today.');
+          result.in_the_office = false;
           convo.gotoThread('comments');
           convo.next();
         }
@@ -71,12 +145,12 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
       }
     ],{},'default');
 
-    // In For Lunch Conversation thread
-    convo.addQuestion('Are you available for lunch? Say YES or NO.',[
+    // In For Lunch Conversation thread - survey lunch availability
+    convo.addQuestion('Are you available for lunch? Reply with YES or NO.',[
       {
         pattern: bot.utterances.yes,
         callback: function(response,convo) {
-          console.log(member.firstName + ' is available for lunch today.');
+          result.in_for_lunch = true;
           convo.gotoThread('comments');
           convo.next();
         }
@@ -84,7 +158,7 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
       {
         pattern: bot.utterances.no,
         callback: function(response,convo) {
-          console.log(member.firstName + ' is NOT available for lunch today.');
+          result.in_for_lunch = false;
           convo.gotoThread('comments');
           convo.next();
         }
@@ -99,46 +173,46 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
       }
     ],{},'in_for_lunch');
 
-    // In The Office Conversation Thread for OTHER responses
+    // Comments Conversation Thread for leaving additional messages
     convo.addQuestion('If you wish to leave a message, please type it here. Otherwise say NO.', [
       {
         pattern: bot.utterances.no,
-        callback: function(response,convo) {
-          console.log(member.firstName + ' did not leave a comment.');
+        callback: async function(response,convo) {
+          await savePollResult(result, group_name);
           convo.say('Poll ended.');
           convo.next('stop');
         }
       },
       {
         default: true,
-        callback: function(response,convo) {
+        callback: async function(response,convo) {
           // just repeat the question
-          console.log(member.firstName + ' left a comment: ' + response.text);
+          result.comments = response.text;
+          await savePollResult(result, group_name);
           convo.say('Thank you for your response! Poll has ended.');
           convo.next('stop');
         }
       }
     ],{},'comments');
-
-    // Poll Timeout
-    // convo.setTimeout(20000);
-    // convo.onTimeout(function(convo) {
-    //   convo.say('Too slow! Poll timed out.');
-    //   convo.next();
-    // });
   });
 }
 
 /* Helper function to sanitise input and check if user is member of group they are polling */
-function ValidateInput(request, requestor_cec) {
+function ValidateInput(input, requestor_cec) {
   var deferred = Q.defer();
-  var group_name = request.trim().replace(/[^\x00-\x7F]/g, "");
+  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "");
   CommonService.GetGroup(group_name)
     .then(function(group) {
       validateRequestor(requestor_cec, group)
         .then(function() {
-          // Validation complete
-          deferred.resolve(group);
+          validatePoll(group)
+            .then(function() {
+              // Validation complete
+              deferred.resolve(group);
+            })
+            .catch(function(error) {
+              deferred.reject(error);
+            });
         })
         .catch(function(error) {
           deferred.reject(error);

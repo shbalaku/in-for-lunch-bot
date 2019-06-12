@@ -17,8 +17,8 @@ const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN;
 function JoinGroup(message) {
   var deferred = Q.defer();
   var user_cec = message.data.personEmail.split(EMAIL_DOMAIN)[0];
-  var request = message.match[1];
-  HelperService.ValidateInput(request, user_cec)
+  var input = message.match[1];
+  HelperService.ValidateInput(input, user_cec)
     .then(function(resp) {
       deferred.resolve(resp);
     })

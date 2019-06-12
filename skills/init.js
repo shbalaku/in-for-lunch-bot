@@ -9,7 +9,8 @@ client.connect(function(err) {
   // Create LunchGroups Table if it does not exist
   client.query('CREATE TABLE IF NOT EXISTS lunch_groups (\
     name VARCHAR (50) UNIQUE NOT NULL,\
-    members JSON []);', function(err, res) {
+    members JSON [],\
+    poll JSON []);', function(err, res) {
     if (err) throw err;
     client.end();
   });
