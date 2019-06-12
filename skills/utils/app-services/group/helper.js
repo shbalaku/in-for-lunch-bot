@@ -37,8 +37,8 @@ function FormatMembers(admin, members) {
   for (var idx = 0; idx < members.length; idx++) {
     var member = {
       cec: members[idx],
-      status: (admin.cec == members[idx]) ? 'accepted' : 'pending',
-      admin: (admin.cec == members[idx]) ? true : false
+      status: (admin.cec != members[idx]) ? 'accepted' : 'pending',
+      admin: (admin.cec != members[idx]) ? true : false
     };
     json_members.push(member);
   }
@@ -51,7 +51,7 @@ function ValidateInput(input) {
     var response = {};
     var input_arr = input.trim().replace(/[^\x00-\x7F]/g, "").split(' ');
     // Initial sanitation cases
-    if (input_arr.length < 3) {
+    if (input_arr.length < 2) {
       response.valid = false;
       response.message = 'Usage: group [ group_name cec1 cec2 ]. E.g. group hogwarts hpotter rweasley. Two or more CECs required.';
     } else {
@@ -59,7 +59,7 @@ function ValidateInput(input) {
       var cecs = input_arr.slice(1, input_arr.length);
       valid_members = await validateCECs(cecs);
       // Members validation cases
-      if (valid_members.length < 2) {
+      if (valid_members.length < 1) {
         response.valid = false;
         response.message = 'Two or more valid CECs are required. Please check your inputs and try again.';
       } else {

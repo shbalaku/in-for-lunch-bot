@@ -106,7 +106,7 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
         callback: function(response,convo) {
           console.log(member.firstName + ' did not leave a comment.');
           convo.say('Poll ended.');
-          convo.next();
+          convo.next('stop');
         }
       },
       {
@@ -114,8 +114,8 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
         callback: function(response,convo) {
           // just repeat the question
           console.log(member.firstName + ' left a comment: ' + response.text);
-          convo.say('Thank you for your response!');
-          convo.next();
+          convo.say('Thank you for your response! Poll has ended.');
+          convo.next('stop');
         }
       }
     ],{},'comments');
