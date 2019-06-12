@@ -1,50 +1,15 @@
 // Helper Functions for Join Lunch Group Services
 const Q = require('q');
-const CiscoSpark = require('node-ciscospark');
-const spark = new CiscoSpark(process.env.SPARK_TOKEN);
 
 /* LOAD CLIENTS/MODULES */
 const PostgreSQL = require('./../../postgres');
+const CommonService = require('./../../common');
 
 var service = {};
 
 service.ValidateInput = ValidateInput;
 
 module.exports = service;
-
-/* ENVIRONMENT VARIABLES */
-const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN;
-
-/* Helper function to retrieve group entry from lunch_groups table */
-function getGroup(name) {
-  var deferred = Q.defer();
-  var group = {};
-
-  // Establish client POSTGRESQL
-  const client = PostgreSQL.CreateClient();
-  client.connect(function(err) {
-    if (err) throw err;
-    // select lunch group entry with group name
-    client.query('SELECT * FROM lunch_groups WHERE name = $1', [name], function(err, res) {
-      if (err) throw err;
-      if (res.rows.length != 0) {
-        client.end(function(err) {
-          if (err) throw err;
-          group.name = name;
-          group.members = res.rows[0].members;
-          deferred.resolve(group);
-        });
-      } else {
-        client.end(function(err) {
-          if (err) throw err;
-          deferred.reject(group_name + ' does not exist or you have not been invited to join.');
-        });
-      }
-    });
-  });
-
-  return deferred.promise;
-}
 
 /* Helper function to get index of member in members array in lunch_groups table */
 function getUserIndex(cec, group_name) {
@@ -63,7 +28,7 @@ function getUserIndex(cec, group_name) {
       }, []);
       client.end(function(err) {
         if (err) throw err;
-        deferred.resolve(indexArr[0]+1);
+        deferred.resolve(indexArr[0] + 1);
       });
     });
   });
@@ -121,10 +86,10 @@ function validateRequestor(requestor_cec, group) {
 }
 
 /* Helper function to sanitise input and check if user has been invited to group */
-async function ValidateInput(request, requestor_cec) {
+function ValidateInput(request, requestor_cec) {
   var deferred = Q.defer();
   var group_name = request.trim().replace(/[^\x00-\x7F]/g, "");
-  getGroup(group_name)
+  CommonService.GetGroup(group_name)
     .then(function(group) {
       validateRequestor(requestor_cec, group)
         .then(function(resp) {
@@ -137,6 +102,5 @@ async function ValidateInput(request, requestor_cec) {
     .catch(function(error) {
       deferred.reject(error);
     });
-
   return deferred.promise;
 }

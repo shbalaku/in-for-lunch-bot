@@ -1,7 +1,10 @@
 // Helper Functions for Create Lunch Group Services
 const Q = require('q');
 const CiscoSpark = require('node-ciscospark');
-const spark = new CiscoSpark(process.env.SPARK_TOKEN);
+const spark = new CiscoSpark(process.env.ACCESS_TOKEN);
+
+/* LOAD CLIENTS/MODULES */
+const CommonService = require('./../../common');
 
 var service = {};
 
@@ -21,22 +24,11 @@ function validateCECs(cecs) {
     var valid_cecs = [];
     let unique_cecs = [...new Set(cecs)];
     for (var idx = 0; idx < unique_cecs.length; idx++) {
-      var personEmail = unique_cecs[idx] + EMAIL_DOMAIN;
-      var res = await listPeople(personEmail);
+      var res = await CommonService.GetPersonByCEC(unique_cecs[idx]);
       if (res.items.length != 0) valid_cecs.push(unique_cecs[idx]);
     }
     resolve(valid_cecs);
   });
-
-  // List People Spark API Call
-  function listPeople(_email) {
-    return new Promise(resolve => {
-      spark.people.list(_email, function(err, res) {
-        if (err) throw err;
-        resolve(JSON.parse(res));
-      });
-    });
-  }
 }
 
 /* Helper function to format group members from array to JSON entries in PostgreSQL */

@@ -1,7 +1,5 @@
 // Helper Functions for List Lunch Group Services
 const Q = require('q');
-const CiscoSpark = require('node-ciscospark');
-const spark = new CiscoSpark(process.env.SPARK_TOKEN);
 
 /* LOAD CLIENTS/MODULES */
 const PostgreSQL = require('./../../postgres');
@@ -12,9 +10,6 @@ service.GetGroupsByCEC = GetGroupsByCEC;
 service.BuildText = BuildText;
 
 module.exports = service;
-
-/* ENVIRONMENT VARIABLES */
-const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN;
 
 /* Helper function to put all groups user cec is a part of into array */
 function GetGroupsByCEC(cec) {

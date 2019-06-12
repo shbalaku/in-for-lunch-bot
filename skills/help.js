@@ -15,6 +15,9 @@ function Controller(controller) {
       " E.g. join hogwarts.";
     text += "\n- **List lunch groups**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "list");
+    text += "\n- **Poll lunch group**" + "\n" + "    * " +
+      "Usage: " + bot.appendMention(message, "poll <group_name>") +
+      " E.g. poll hogwarts.";
     text += "\n\nHelp will always be given at Hogwarts to those who deserve it.";
     bot.reply(message, text);
   });
