@@ -174,23 +174,28 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
     ],{},'in_for_lunch');
 
     // Comments Conversation Thread for leaving additional messages
-    convo.addQuestion('If you wish to leave a message, please type it here. Otherwise say NO.', [
+    convo.addQuestion('If you wish to leave a message, please type it here (80 character limit). Otherwise say NO.', [
       {
         pattern: bot.utterances.no,
         callback: async function(response,convo) {
           await savePollResult(result, group_name);
-          convo.say('Poll ended.');
+          convo.say('Thank you for your response! Poll has ended.');
           convo.next('stop');
         }
       },
       {
         default: true,
         callback: async function(response,convo) {
-          // just repeat the question
-          result.comments = response.text;
-          await savePollResult(result, group_name);
-          convo.say('Thank you for your response! Poll has ended.');
-          convo.next('stop');
+          // if exceeds char limit just repeat the question
+          if (response.text.length > 80) {
+            convo.gotoThread('comments');
+            convo.next();
+          } else {
+            result.comments = response.text;
+            await savePollResult(result, group_name);
+            convo.say('Thank you for your response! Poll has ended.');
+            convo.next('stop');
+          }
         }
       }
     ],{},'comments');
