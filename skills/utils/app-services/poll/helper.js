@@ -35,7 +35,7 @@ function validatePoll(group_name) {
         if (res.rows.length == 0) {
           deferred.resolve('poll request valid');
         } else {
-          deferred.reject('A poll is currently in progress \u{23f3} You must wait until the poll completes to start a new poll.');
+          deferred.reject('A poll is currently in progress \u23f3 You must wait until the poll completes to start a new poll.');
         }
       });
     });
@@ -292,7 +292,7 @@ function GetPollResults(group_name, user_id) {
           });
           deferred.resolve(results);
         } else {
-          var err = 'No poll results to display right now.'
+          var err = 'No poll results to display right now.';
           deferred.reject(err);
         }
       });
@@ -348,7 +348,9 @@ async function BuildResultsText(results, group_name) {
   }
   // Out of office section
   var out_of_office_arr = results.filter( result => !result.in_the_office );
-  if (out_of_office_arr.length != 0) {
+  if (results.length == out_of_office_arr.length) {
+    text += '\nNo-one is in the office today \u{1f63f}\n';
+  } else if (out_of_office_arr.length != 0) {
     text += '\n\u{1f3d6} Out Of Office:\n';
     out_of_office_arr.forEach( obj => {
       text += '- ' + obj.person_name + '\n';
@@ -367,7 +369,7 @@ async function BuildResultsText(results, group_name) {
   // Members yet to complete poll section
   var in_progress_pollers = await getPollersInProgress(group_name);
   if (in_progress_pollers.length != 0) {
-    text += '\n \u{1f937} Yet to complete poll:\n';
+    text += '\n\u{1f937} Yet to complete poll:\n';
     in_progress_pollers.forEach( poller => {
       text += '- ' + poller + '\n';
     });
