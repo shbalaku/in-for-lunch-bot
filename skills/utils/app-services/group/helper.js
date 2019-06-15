@@ -1,102 +1,224 @@
 // Helper Functions for Create Lunch Group Services
 const Q = require('q');
-const CiscoSpark = require('node-ciscospark');
-const spark = new CiscoSpark(process.env.ACCESS_TOKEN);
+
+/* ENVIRONMENT VARIABLES */
+const PATH = process.env.PATH;
+const TABLE_NAME = process.env.TABLE_NAME;
 
 /* LOAD CLIENTS/MODULES */
-const CommonService = require('./../../common');
+const PostgreSQL = require(PATH + '/skills/utils/postgres');
+const CommonService = require(PATH + '/skills/utils/common');
 
 var service = {};
 
-service.ValidateInput = ValidateInput;
-service.GetPersonDetails = GetPersonDetails;
-service.FormatMembers = FormatMembers;
-service.SendInvite = SendInvite;
+service.ValidateInputSyntax = ValidateInputSyntax;
+service.ValidateCECs = ValidateCECs;
+service.ValidateGroup = ValidateGroup;
+service.AddTableEntry = AddTableEntry;
+service.AddPersonToGroup = AddPersonToGroup;
+service.RemovePersonFromGroup = RemovePersonFromGroup;
+service.SetPrimaryGroupForPerson = SetPrimaryGroupForPerson;
 
 module.exports = service;
 
-/* ENVIRONMENT VARIABLES */
-const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN;
-
-/* Helper function which returns list of valid CECs from input list */
-function validateCECs(cecs) {
-  return new Promise(async (resolve) => {
-    var valid_cecs = [];
-    let unique_cecs = [...new Set(cecs)];
-    for (var idx = 0; idx < unique_cecs.length; idx++) {
-      var res = await CommonService.GetPersonByCEC(unique_cecs[idx]);
-      if (res.items.length != 0) valid_cecs.push(unique_cecs[idx]);
-    }
-    resolve(valid_cecs);
-  });
-}
-
-/* Helper function to format group members from array to JSON entries in PostgreSQL */
-function FormatMembers(admin, members) {
-  var json_members = [];
-  for (var idx = 0; idx < members.length; idx++) {
-    var member = {
-      cec: members[idx],
-      status: (admin.cec == members[idx]) ? 'accepted' : 'pending',
-      admin: (admin.cec == members[idx]) ? true : false
-    };
-    json_members.push(member);
+/* Helper function to validate input syntax */
+function ValidateInputSyntax(input) {
+  var deferred = Q.defer();
+  var resp = {};
+  var input_arr = input.trim().replace(/[^\x00-\x7F]/g, "").split(' ');
+  if (input_arr.length < 2) { // testing value = 1, prod value = 2
+    var err = 'Usage: group [ group_name cec1 cec2 ]. E.g. group hogwarts hpotter rweasley. One or more CECs required.';
+    deferred.reject(err);
+  } else {
+    resp.group_name = input_arr[0].toUpperCase();
+    resp.cecs = input_arr.slice(1, input_arr.length);
+    deferred.resolve(resp);
   }
-  return json_members;
+  return deferred.promise;
 }
 
-/* Function validates group command */
-function ValidateInput(input) {
-  return new Promise(async (resolve) => {
-    var response = {};
-    var input_arr = input.trim().replace(/[^\x00-\x7F]/g, "").split(' ');
-    // Initial sanitation cases
-    if (input_arr.length < 2) { // testing value = 2, prod value = 3
-      response.valid = false;
-      response.message = 'Usage: group [ group_name cec1 cec2 ]. E.g. group hogwarts hpotter rweasley. Two or more CECs required.';
-    } else {
-      var group_name = input_arr[0];
-      var cecs = input_arr.slice(1, input_arr.length);
-      valid_members = await validateCECs(cecs);
-      // Members validation cases
-      if (valid_members.length < 1) { // testing value = 1, prod value = 2
-        response.valid = false;
-        response.message = 'Two or more valid CECs are required. Please check your inputs and try again.';
-      } else {
-        response.valid = true;
-        response.group_name = group_name;
-        response.group_members = valid_members;
+/* Helper function to validate input CECs against Spark API */
+async function ValidateCECs(cecs, admin_id) {
+  var deferred = Q.defer();
+  var valid_members = [];
+  let unique_cecs = [...new Set(cecs)];
+  for (var idx = 0; idx < unique_cecs.length; idx++) {
+    var res = await CommonService.GetPersonByCEC(unique_cecs[idx]);
+    if (res.items.length != 0) {
+      if (res.items[0].id != admin_id) {
+        var person = {
+          id: res.items[0].id,
+          name: res.items[0].firstName,
+          status: 'pending',
+          admin: false
+        };
+        valid_members.push(person);
       }
     }
-    resolve(response);
-  });
-}
-
-/* Helper function to retrieve admin of lunch group's details */
-function GetPersonDetails(id) {
-  return new Promise(resolve => {
-    var details = {};
-    spark.people.get(id, function(err, res) {
-      if (err) throw err;
-      var data = JSON.parse(res);
-      details.name = data.displayName;
-      var personEmail = data.emails.filter(email => email.includes(EMAIL_DOMAIN))[0];
-      details.cec = personEmail.split(EMAIL_DOMAIN)[0];
-      resolve(details);
-    });
-  });
-}
-
-/* Helper function to notify pending members that they have been invited to join a lunch group */
-function SendInvite(group_name, admin_name, pending_members) {
-  for (var idx = 0; idx < pending_members.length; idx++) {
-    var params = {
-      toPersonEmail: pending_members[idx].cec + EMAIL_DOMAIN,
-      markdown: admin_name + ' invites you to join the ' + group_name + ' lunch group!' +
-      '\n\nTo accept, reply with: `join ' + group_name + '`'
-    }
-    spark.messages.create(params, function(err) {
-      if (err) console.error(err);
-    });
   }
+  // Add admin to valid members
+  var admin_person_name = await CommonService.GetPersonById(admin_id);
+  var admin = {
+    id: admin_id,
+    name: admin_person_name,
+    status: 'accepted', //testing value = pending, prod value = accepted
+    admin: true
+  };
+  valid_members.push(admin);
+  // Validation
+  if (valid_members.length < 1) { // testing value = 1, prod value = 2
+    var err = 'One or more valid CECs are required. Please check your inputs and try again.';
+    deferred.reject(err);
+  } else {
+    deferred.resolve(valid_members);
+  }
+  return deferred.promise;
+}
+
+/* Helper function to validate uniqueness of group name */
+function ValidateGroup(group_name) {
+  var deferred = Q.defer();
+  // Establish client POSTGRESQL
+  const client = PostgreSQL.CreateClient();
+  client.connect(function(err) {
+    if (err) throw err;
+    // create lunch group entry if group name is unique
+    client.query('SELECT DISTINCT group_name FROM ' + TABLE_NAME + ' WHERE group_name = $1;', [group_name], function(err, res) {
+      if (err) throw err;
+      client.end(function(err) {
+        if (err) throw err;
+        if (res.rows.length == 0) {
+          deferred.resolve();
+        } else {
+          deferred.reject('Lunch group: "' + group_name + '" already exists. Please select another name.');
+        }
+      });
+    });
+  });
+  return deferred.promise;
+}
+
+/* Helper function to add member information to table */
+function AddTableEntry(member, group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // insert lunch group table entry
+      client.query('INSERT INTO ' + TABLE_NAME + ' (person_id, person_name, group_name, admin, status, poll_in_progress) VALUES ($1, $2, $3, $4, $5, $6);',
+       [member.id, member.name, group_name, member.admin, member.status, false], function(err) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          resolve();
+        });
+      });
+    });
+  });
+}
+
+/* Helper function to remove member information from table */
+function RemoveTableEntry(member_id, group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // insert lunch group table entry
+      client.query('DELETE FROM ' + TABLE_NAME + ' WHERE person_id=$1 AND group_name=$2;', [member_id, group_name], function(err) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          resolve();
+        });
+      });
+    });
+  });
+}
+
+/* Helper function to join a person to a lunch group in Postgres */
+function AddPersonToGroup(person, group_name) {
+  var deferred = Q.defer();
+  // Establish client POSTGRESQL
+  const client = PostgreSQL.CreateClient();
+  client.connect(function(err) {
+    if (err) throw err;
+    // check if person exists already
+    client.query('SELECT status FROM ' + TABLE_NAME + ' WHERE person_id=$1 AND group_name=$2;', [person.id, group_name], async function(err, res) {
+      if (err) throw err;
+      if (res.rows.length == 1) {
+        var status = res.rows[0].status;
+        if (status == 'pending') {
+          // Update member's status as accepted
+          client.query('UPDATE ' + TABLE_NAME + ' SET status=$1 WHERE person_id=$2 AND group_name=$3;',
+          ['accepted', person.id, group_name], function(err) {
+            if (err) throw err;
+            client.end(function(err) {
+              var msg = 'Success! You are now part of the ' + group_name + ' lunch group!';
+              deferred.resolve(msg);
+            });
+          });
+        } else {
+          var err = 'You have already joined the ' + group_name + ' lunch group.';
+          deferred.reject(err);
+        }
+      } else {
+        person.status = 'accepted';
+        await AddTableEntry(person, group_name);
+        client.end(function(err) {
+          if (err) throw err;
+          var msg = 'Success! You are now part of the ' + group_name + ' lunch group!';
+          deferred.resolve(msg);
+        });
+      }
+    });
+  });
+  return deferred.promise;
+}
+
+/* Helper function to remove a person from a lunch group in Postgres */
+function RemovePersonFromGroup(person, group_name) {
+  var deferred = Q.defer();
+  // Establish client POSTGRESQL
+  const client = PostgreSQL.CreateClient();
+  client.connect(function(err) {
+    if (err) throw err;
+    // check if person exists
+    client.query('SELECT * FROM ' + TABLE_NAME + ' WHERE person_id=$1 AND group_name=$2;', [person.id, group_name], async function(err, res) {
+      if (err) throw err;
+      if (res.rows.length == 1) {
+        await RemoveTableEntry(person.id, group_name);
+        client.end(function(err) {
+          if (err) throw err;
+          var msg = 'No worries. You have been removed from the ' + group_name + ' lunch group.';
+          deferred.resolve(msg);
+        });
+      } else {
+        var err = person.name + ' is not part of the ' + group_name + ' lunch group.';
+        deferred.reject(err);
+      }
+    });
+  });
+  return deferred.promise;
+}
+
+/* Helper function to set primary group field in lunch groups table for person */
+function SetPrimaryGroupForPerson(group_name, user_id) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // update primary group column in table for user_id
+      client.query('UPDATE ' + TABLE_NAME + ' SET primary_group=$1 WHERE person_id=$2;',
+      [group_name, user_id], function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          resolve('primary group set');
+        });
+      });
+    });
+  });
 }

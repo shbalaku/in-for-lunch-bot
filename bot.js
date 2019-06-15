@@ -9,6 +9,8 @@
 
 // Load environment variables from project .env file
 require('node-env-file')(__dirname + '/.env');
+// Set root of app directory to environment
+process.env.PATH = __dirname;
 
 if (!process.env.ACCESS_TOKEN) {
   console.log("Could not start as bots require a Cisco Webex Teams API access token.");

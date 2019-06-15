@@ -1,87 +1,120 @@
 // Helper Functions for Poll Lunch Group Services
 const Q = require('q');
 
+/* ENVIRONMENT VARIABLES */
+const PATH = process.env.PATH;
+const TABLE_NAME = process.env.TABLE_NAME;
+
 /* LOAD CLIENTS/MODULES */
-const PostgreSQL = require('./../../postgres');
-const CommonService = require('./../../common');
+const PostgreSQL = require(PATH + '/skills/utils/postgres');
+const CommonService = require(PATH + '/skills/utils/common');
 
 var service = {};
 
-service.ValidateInput = ValidateInput;
+service.ValidatePollInput = ValidatePollInput;
 service.PollMember = PollMember;
+service.ValidateResultsInput = ValidateResultsInput;
+service.GetPollResults = GetPollResults;
+service.BuildResultsText = BuildResultsText;
 
 module.exports = service;
 
-/* Helper functioon to validate poll requestor (check they are member of group) */
-function validateRequestor(requestor_cec, group) {
+/* Helper function to check if any polls are in progress in group */
+function validatePoll(group_name) {
   var deferred = Q.defer();
-  var pending = group.members.filter(member => (member.cec == requestor_cec && member.status == 'pending'));
-  var accepted = group.members.filter(member => (member.cec == requestor_cec && member.status == 'accepted'));
-  if (pending.length == 1) {
-    deferred.reject('To start a poll, first join your lunch group with command: `join ' + group.name + '`.');
-  } else if (accepted.length == 1) {
-    deferred.resolve(true);
+  // Establish client POSTGRESQL
+  const client = PostgreSQL.CreateClient();
+  client.connect(function(err) {
+    if (err) throw err;
+    // select lunch group entry with user_id and group_name
+    client.query('SELECT poll_in_progress FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_in_progress=$2;',
+    [group_name, true], function(err, res) {
+      if (err) throw err;
+      client.end(function(err) {
+        if (err) throw err;
+        if (res.rows.length == 0) {
+          deferred.resolve('poll request valid');
+        } else {
+          deferred.reject('A poll is currently in progress. You must wait until the poll completes to start a new poll.');
+        }
+      });
+    });
+  });
+  return deferred.promise;
+}
+
+/* Helper function to sanitise input and check if user is member of group they are polling */
+function ValidatePollInput(input, user_id) {
+  var deferred = Q.defer();
+  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
+  if (group_name.length == 0) {
+    // set group_name as primary group for user
+    CommonService.GetPrimaryGroupById(user_id)
+      .then(function(primary_group) {
+        deferred.resolve(primary_group);
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
   } else {
-    deferred.reject(group.name + ' does not exist or you have not been invited to join.')
+    // Validate group
+    CommonService.ValidateGroup(group_name)
+      .then(function() {
+        // Validate requestor
+        CommonService.ValidatePersonInGroup(user_id, group_name)
+          .then(function() {
+            // Validate whether poll can be conducted
+            validatePoll(group_name)
+              .then(function() {
+                // Validation complete
+                deferred.resolve(group_name);
+              })
+              .catch(function(error) {
+                deferred.reject(error);
+              });
+          })
+          .catch(function(error) {
+            deferred.reject(error);
+          });
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
   }
   return deferred.promise;
 }
 
-/* Helper function to clear poll column for a group */
-function clearPoll(group_name) {
+/* Helper function to set poll in progress flag for member of lunch group for tracking */
+function setPollInProgress(member_id, group_name, flag) {
   return new Promise(resolve => {
     // Establish client POSTGRESQL
     const client = PostgreSQL.CreateClient();
     client.connect(function(err) {
       if (err) throw err;
-      // select lunch group entry with group name
-      client.query('UPDATE lunch_groups SET poll=$1', [null], function(err, res) {
+      // update poll result columns in table
+      client.query('UPDATE ' + TABLE_NAME + ' SET poll_in_progress=$1 WHERE person_id=$2 AND group_name=$3;',
+      [flag, member_id, group_name], function(err, res) {
         if (err) throw err;
         client.end(function(err) {
           if (err) throw err;
-          resolve('cleared');
+          resolve('poll in progress flag set');
         });
       });
     });
   });
 }
 
-/* Helper function to check if any polls are in progress in group */
-async function validatePoll(group) {
-  var deferred = Q.defer();
-  // Check if everyone in the group has joined before poll starts
-  var pending = group.members.filter(member => member.status == 'pending');
-  if (pending.length > 0) {
-    deferred.reject('Everyone in the group must join before you start a poll.');
-  } else {
-    // Check on existing polls
-    var poll = await CommonService.GetPollByGroup(group.name);
-    if (poll == null) {
-      deferred.resolve(true);
-    } else {
-      var group_members_total = group.members.length;
-      var finished_poll = poll.filter(poll_result => poll_result.finished_poll);
-      (finished_poll.length != group_members_total) ? deferred.reject('A poll is currently in progress. ' +
-      'You must wait until the poll completes to start a new poll.') : await clearPoll(group.name);
-      deferred.resolve(true);
-    }
-  }
-  return deferred.promise;
-}
-
 /* Helper function to save poll result to PostgreSQL */
-function savePollResult(result, group_name) {
-  return new Promise(async resolve => {
-    result.finished_poll = true;
-    var poll = await CommonService.GetPollByGroup(group_name);
-    if (poll == null) poll = [];
-    poll.push(result);
+function savePollResult(result, member_id, group_name) {
+  return new Promise(async (resolve) => {
+    await setPollInProgress(member_id, group_name, false);
     // Establish client POSTGRESQL
     const client = PostgreSQL.CreateClient();
     client.connect(function(err) {
       if (err) throw err;
-      // select lunch group entry with group name
-      client.query('UPDATE lunch_groups SET poll=$1 WHERE name=$2', [poll, group_name], function(err, res) {
+      // update poll result columns in table
+      client.query('UPDATE ' + TABLE_NAME + ' SET in_the_office=$1, in_for_lunch=$2, comments=$3 WHERE person_id=$4 AND group_name=$5;',
+      [result.in_the_office, result.in_for_lunch, result.comments, member_id, group_name], function(err, res) {
         if (err) throw err;
         client.end(function(err) {
           if (err) throw err;
@@ -93,27 +126,22 @@ function savePollResult(result, group_name) {
 }
 
 /* Helper function to poll member */
-async function PollMember(requestor_name, member_cec, group_name, bot) {
-  // Get member details
-  var member_details = await CommonService.GetPersonByCEC(member_cec);
-  var member = member_details.items[0];
-
+async function PollMember(requestor_name, member, group_name, bot) {
+  // Set poll in progress flag for member of group
+  await setPollInProgress(member.id, group_name, true);
   // Start Conversation with Poll Questions
   bot.startPrivateConversationWithPersonId(member.id, function(err, convo) {
     if (err) throw err;
 
     // Initialise poll result object
     var result = {
-      name: member.firstName,
-      cec: member_cec,
       in_the_office: false,
       in_for_lunch: false,
-      comments: '',
-      finished_poll: false
+      comments: ''
     };
 
     // Initial message
-    if (member.firstName != requestor_name) {
+    if (member.name != requestor_name) {
       convo.sayFirst(requestor_name + ' started a poll for the ' + group_name + ' lunch group!');
     }
 
@@ -178,7 +206,7 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
       {
         pattern: bot.utterances.no,
         callback: async function(response,convo) {
-          await savePollResult(result, group_name);
+          await savePollResult(result, member.id, group_name);
           convo.say('Thank you for your response! Poll has ended.');
           convo.next('stop');
         }
@@ -192,7 +220,7 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
             convo.next();
           } else {
             result.comments = response.text;
-            await savePollResult(result, group_name);
+            await savePollResult(result, member.id, group_name);
             convo.say('Thank you for your response! Poll has ended.');
             convo.next('stop');
           }
@@ -202,29 +230,145 @@ async function PollMember(requestor_name, member_cec, group_name, bot) {
   });
 }
 
-/* Helper function to sanitise input and check if user is member of group they are polling */
-function ValidateInput(input, requestor_cec) {
+/* Helper function to sanitise input for results command and check if user is member of group */
+function ValidateResultsInput(input, user_id) {
   var deferred = Q.defer();
-  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "");
-  CommonService.GetGroup(group_name)
-    .then(function(group) {
-      validateRequestor(requestor_cec, group)
-        .then(function() {
-          validatePoll(group)
-            .then(function() {
-              // Validation complete
-              deferred.resolve(group);
-            })
-            .catch(function(error) {
-              deferred.reject(error);
-            });
-        })
-        .catch(function(error) {
-          deferred.reject(error);
-        });
-    })
-    .catch(function(error) {
-      deferred.reject(error);
-    });
+  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
+  if (group_name.length == 0) {
+    // set group_name as primary group for user
+    CommonService.GetPrimaryGroupById(user_id)
+      .then(function(primary_group) {
+        deferred.resolve(primary_group);
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
+  } else {
+    // Validate group
+    CommonService.ValidateGroup(group_name)
+      .then(function() {
+        // Validate requestor
+        CommonService.ValidatePersonInGroup(user_id, group_name)
+          .then(function() {
+            // Validation complete
+            deferred.resolve(group_name);
+          })
+          .catch(function(error) {
+            deferred.reject(error);
+          });
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
+  }
   return deferred.promise;
+}
+
+/* Helper function to get poll results for a group */
+function GetPollResults(group_name, user_id) {
+  var deferred = Q.defer();
+  var results = [];
+  // Establish client POSTGRESQL
+  const client = PostgreSQL.CreateClient();
+  client.connect(function(err) {
+    if (err) throw err;
+    // get poll results by group_name
+    client.query('SELECT person_name, in_the_office, in_for_lunch, comments FROM ' +
+    TABLE_NAME + ' WHERE group_name=$1 AND person_id!=$2 AND in_the_office IS NOT NULL;',
+    [group_name, user_id], function(err, res) {
+      if (err) throw err;
+      client.end(function(err) {
+        if (err) throw err;
+        if (res.rows.length != 0) {
+          var rows = res.rows;
+          rows.forEach( row => {
+            var result = {
+              person_name: row.person_name,
+              in_the_office: row.in_the_office,
+              in_for_lunch: row.in_for_lunch,
+              comments: row.comments
+            };
+            results.push(result);
+          });
+          deferred.resolve(results);
+        } else {
+          var err = 'No poll results to display right now.'
+          deferred.reject(err);
+        }
+      });
+    });
+  });
+  return deferred.promise;
+}
+
+/* Helper function to get array of pollers in progress for group_name */
+function getPollersInProgress(group_name) {
+  return new Promise(resolve => {
+    var in_progress_pollers = [];
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // get pollers who are in progress
+      client.query('SELECT person_name FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_in_progress=$2;',
+      [group_name, true], function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          res.rows.forEach( row => {
+            in_progress_pollers.push(row.person_name);
+          });
+          resolve(in_progress_pollers);
+        });
+      });
+    });
+  });
+}
+
+/* Helper service to write text string of poll results displayed back to user */
+async function BuildResultsText(results, group_name) {
+  var text = '';
+  // In for lunch section
+  var in_for_lunch_arr = results.filter( result => result.in_for_lunch );
+  if (in_for_lunch_arr.length == 0) {
+    text += '\nNo-one is in for lunch today.\n';
+  } else {
+    text += '\n\u{1f37d} In For Lunch:\n';
+    in_for_lunch_arr.forEach( obj => {
+      text += '- ' + obj.person_name + '\n';
+    });
+  }
+  // In the office but not in for lunch section
+  var in_the_office_arr = results.filter( result => (result.in_the_office && !result.in_for_lunch));
+  if (in_the_office_arr.length != 0) {
+    text += '\n\u{1f3e2} In The Office But Not In For Lunch:\n';
+    in_the_office_arr.forEach( obj => {
+      text += '- ' + obj.person_name + '\n';
+    });
+  }
+  // Out of office section
+  var out_of_office_arr = results.filter( result => !result.in_the_office );
+  if (out_of_office_arr.length != 0) {
+    text += '\n\u{1f3d6} Out Of Office:\n';
+    out_of_office_arr.forEach( obj => {
+      text += '- ' + obj.person_name + '\n';
+    });
+  }
+  // Comments section
+  var comments_arr = results.filter( result => result.comments.length != 0 );
+  if (comments_arr.length != 0) {
+    text += '\n\u{1f4ac} Comments:\n';
+    comments_arr.forEach( obj => {
+      text += '- ' + obj.person_name + ' says: ' + obj.comments + '\n';
+    });
+  }
+  // Members yet to complete poll section
+  var in_progress_pollers = await getPollersInProgress(group_name);
+  if (in_progress_pollers.length != 0) {
+    text += '\n \u{1f937} Yet to complete poll:\n';
+    in_progress_pollers.forEach( poller => {
+      text += '- ' + poller + '\n';
+    });
+  }
+  return text;
 }

@@ -9,15 +9,18 @@ function Controller(controller) {
     var text = "Here are my skills:";
     text += "\n- **Create lunch group**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "group <group_name> <cec1> <cec2> ...") +
-      " E.g. group hogwarts hpotter rweasley. Two or more CECs required (including your own).";
-    text += "\n- **Join lunch group**" + "\n" + "    * " +
-      "Usage: " + bot.appendMention(message, "join <group_name>") +
-      " E.g. join hogwarts.";
+      " E.g. group hogwarts hpotter rweasley. One or more valid CECs required (excluding your own).";
     text += "\n- **List lunch groups**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "list");
     text += "\n- **Poll lunch group**" + "\n" + "    * " +
-      "Usage: " + bot.appendMention(message, "poll <group_name>") +
-      " E.g. poll hogwarts.";
+      "Usage: " + bot.appendMention(message, "poll [<group_name>]") +
+      " E.g. poll hogwarts. If group name is omitted, your preferred lunch group will be polled.";
+    text += "\n- **Set a preferred lunch group**" + "\n" + "    * " +
+      "Usage: " + bot.appendMention(message, "set-default <group_name>") +
+      " E.g. set-default hogwarts.";
+    text += "\n- **Display poll results from your lunch group**" + "\n" + "    * " +
+      "Usage: " + bot.appendMention(message, "results [<group_name>]") +
+      " E.g. results hogwarts. If group name is omitted, results for your preferred lunch group will be shown.";
     text += "\n\nHelp will always be given at Hogwarts to those who deserve it.";
     bot.reply(message, text);
   });

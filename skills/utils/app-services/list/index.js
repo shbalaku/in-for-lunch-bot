@@ -10,14 +10,11 @@ service.List = List;
 
 module.exports = service;
 
-/* ENVIRONMENT VARIABLES */
-const EMAIL_DOMAIN = process.env.EMAIL_DOMAIN;
-
 /* Function which lists all of the requestor's lunch groups */
 function List(message) {
   var deferred = Q.defer();
-  var user_cec = message.data.personEmail.split(EMAIL_DOMAIN)[0];
-  HelperService.GetGroupsByCEC(user_cec)
+  var user_id = message.data.personId;
+  HelperService.GetGroupsByPersonId(user_id)
     .then(function(groups) {
       var text = HelperService.BuildText(groups);
       deferred.resolve(text);
