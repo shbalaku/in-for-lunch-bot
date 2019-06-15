@@ -66,7 +66,7 @@ async function ValidateCECs(cecs, admin_id) {
   };
   valid_members.push(admin);
   // Validation
-  if (valid_members.length < 1) { // testing value = 1, prod value = 2
+  if (valid_members.length < 2) { // testing value = 1, prod value = 2
     var err = 'One or more valid CECs are required. Please check your inputs and try again.';
     deferred.reject(err);
   } else {
