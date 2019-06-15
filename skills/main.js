@@ -15,7 +15,7 @@ function Controller(controller) {
   controller.hears('group(.*)', 'direct_message,direct_mention', function(bot, message) {
     GroupService.CreateGroup(message)
       .then(function(resp) {
-        bot.reply(message, resp.group_name + ' lunch group has been created. Group members have been invited.');
+        bot.reply(message, resp.group_name + ' lunch group has been created \u{1f973} Group members have been invited \u{1f4e4}');
         GroupService.NotifyGroupJoin(resp, bot);
       })
       .catch(function(error) {

@@ -35,7 +35,7 @@ function validatePoll(group_name) {
         if (res.rows.length == 0) {
           deferred.resolve('poll request valid');
         } else {
-          deferred.reject('A poll is currently in progress. You must wait until the poll completes to start a new poll.');
+          deferred.reject('A poll is currently in progress \u{23f3} You must wait until the poll completes to start a new poll.');
         }
       });
     });
@@ -330,13 +330,13 @@ async function BuildResultsText(results, group_name) {
   var text = '';
   // In for lunch section
   var in_for_lunch_arr = results.filter( result => result.in_for_lunch );
-  if (in_for_lunch_arr.length == 0) {
-    text += '\nNo-one is in for lunch today.\n';
-  } else {
+  if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach( obj => {
       text += '- ' + obj.person_name + '\n';
     });
+  } else {
+    text += '\nNo-one is in for lunch today \u{1f648}\n';
   }
   // In the office but not in for lunch section
   var in_the_office_arr = results.filter( result => (result.in_the_office && !result.in_for_lunch));
@@ -353,6 +353,8 @@ async function BuildResultsText(results, group_name) {
     out_of_office_arr.forEach( obj => {
       text += '- ' + obj.person_name + '\n';
     });
+  } else {
+    text += '\nEveryone is in the office today! \u{1f4aa}\n';
   }
   // Comments section
   var comments_arr = results.filter( result => result.comments.length != 0 );
@@ -369,6 +371,8 @@ async function BuildResultsText(results, group_name) {
     in_progress_pollers.forEach( poller => {
       text += '- ' + poller + '\n';
     });
+  } else {
+    text += '\nEveryone has completed the poll today \u{1f4af}\n';
   }
   return text;
 }
