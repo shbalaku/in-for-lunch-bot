@@ -22,13 +22,20 @@ function PollGroup(bot, message) {
   var input = message.match[1];
   HelperService.ValidatePollInput(input, user_id)
     .then(async function(group_name) {
-      var requestor_name = await CommonService.GetPersonById(user_id);
-      CommonService.GetMembersByGroupName(group_name)
-        .then(function(members) {
-          members.forEach( (member) => {
-            HelperService.PollMember(requestor_name, member, group_name, bot);
-          });
-          deferred.resolve('Poll started.');
+      // Validate whether poll can be conducted
+      HelperService.ValidatePoll(group_name)
+        .then(async function() {
+          var requestor_name = await CommonService.GetPersonById(user_id);
+          CommonService.GetMembersByGroupName(group_name)
+            .then(function(members) {
+              members.forEach((member) => {
+                HelperService.PollMember(requestor_name, member, group_name, bot);
+              });
+              deferred.resolve('Poll started.');
+            })
+            .catch(function(error) {
+              deferred.reject(error);
+            });
         })
         .catch(function(error) {
           deferred.reject(error);

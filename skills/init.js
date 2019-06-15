@@ -15,6 +15,7 @@ client.connect(function(err) {
     status VARCHAR (8) NOT NULL,\
     primary_group VARCHAR (35),\
     poll_in_progress BOOLEAN NOT NULL,\
+    poll_started BOOLEAN NOT NULL,\
     in_the_office BOOLEAN,\
     in_for_lunch BOOLEAN,\
     comments VARCHAR (80));', function(err, res) {

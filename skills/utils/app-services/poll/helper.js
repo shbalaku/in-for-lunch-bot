@@ -12,6 +12,7 @@ const CommonService = require(PATH + '/skills/utils/common');
 var service = {};
 
 service.ValidatePollInput = ValidatePollInput;
+service.ValidatePoll = ValidatePoll;
 service.PollMember = PollMember;
 service.ValidateResultsInput = ValidateResultsInput;
 service.GetPollResults = GetPollResults;
@@ -19,26 +20,118 @@ service.BuildResultsText = BuildResultsText;
 
 module.exports = service;
 
+/* Helper function to set poll started flag forlunch group for locking polls */
+function setPollStartedFlag(group_name, flag) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // update poll result columns in table
+      client.query('UPDATE ' + TABLE_NAME + ' SET poll_started=$1 WHERE group_name=$2;',
+        [flag, group_name],
+        function(err, res) {
+          if (err) throw err;
+          client.end(function(err) {
+            if (err) throw err;
+            resolve('poll started flag set');
+          });
+        });
+    });
+  });
+}
+
+/* Helper function to set poll started flag forlunch group for locking polls */
+function setPollInProgress(member_id, group_name, flag) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // update poll result columns in table
+      client.query('UPDATE ' + TABLE_NAME + ' SET poll_in_progress=$1 WHERE group_name=$2 AND person_id=$3;',
+        [flag, group_name, member_id],
+        function(err, res) {
+          if (err) throw err;
+          client.end(function(err) {
+            if (err) throw err;
+            resolve('poll in progress flag set');
+          });
+        });
+    });
+  });
+}
+
+/* Helper function to check whether members of a lunch group have all completed the poll */
+function hasPollFinished(group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // select lunch group entry with user_id and group_name
+      client.query('SELECT * FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_in_progress=$2;', [group_name, true], function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          if (res.rows.length == 0) {
+            // every member has finished the poll
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        });
+      });
+    });
+  });
+}
+
+/* Helper function to save poll result to PostgreSQL */
+function savePollResult(result, member_id, group_name) {
+  return new Promise(async (resolve) => {
+    await setPollInProgress(member_id, group_name, false);
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // update poll result columns in table
+      client.query('UPDATE ' + TABLE_NAME + ' SET in_the_office=$1, in_for_lunch=$2, comments=$3 WHERE person_id=$4 AND group_name=$5;',
+        [result.in_the_office, result.in_for_lunch, result.comments, member_id, group_name],
+        function(err, res) {
+          if (err) throw err;
+          client.end(async function(err) {
+            if (err) throw err;
+            var finished = await hasPollFinished(group_name);
+            if (finished) await setPollStartedFlag(group_name, false);
+            resolve('saved');
+          });
+        });
+    });
+  });
+}
+
 /* Helper function to check if any polls are in progress in group */
-function validatePoll(group_name) {
+function ValidatePoll(group_name) {
   var deferred = Q.defer();
   // Establish client POSTGRESQL
   const client = PostgreSQL.CreateClient();
   client.connect(function(err) {
     if (err) throw err;
     // select lunch group entry with user_id and group_name
-    client.query('SELECT poll_in_progress FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_in_progress=$2;',
-    [group_name, true], function(err, res) {
-      if (err) throw err;
-      client.end(function(err) {
+    client.query('SELECT DISTINCT group_name FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_started=$2;',
+      [group_name, true],
+      function(err, res) {
         if (err) throw err;
-        if (res.rows.length == 0) {
-          deferred.resolve('poll request valid');
-        } else {
-          deferred.reject('A poll is currently in progress \u23f3 You must wait until the poll completes to start a new poll.');
-        }
+        client.end(async function(err) {
+          if (err) throw err;
+          if (res.rows.length == 0) {
+            await setPollStartedFlag(group_name, true);
+            deferred.resolve('poll request valid');
+          } else {
+            deferred.reject('A poll is currently in progress \u23f3 You must wait until the poll completes to start a new poll.');
+          }
+        });
       });
-    });
   });
   return deferred.promise;
 }
@@ -63,15 +156,7 @@ function ValidatePollInput(input, user_id) {
         // Validate requestor
         CommonService.ValidatePersonInGroup(user_id, group_name)
           .then(function() {
-            // Validate whether poll can be conducted
-            validatePoll(group_name)
-              .then(function() {
-                // Validation complete
-                deferred.resolve(group_name);
-              })
-              .catch(function(error) {
-                deferred.reject(error);
-              });
+            deferred.resolve(group_name);
           })
           .catch(function(error) {
             deferred.reject(error);
@@ -82,47 +167,6 @@ function ValidatePollInput(input, user_id) {
       });
   }
   return deferred.promise;
-}
-
-/* Helper function to set poll in progress flag for member of lunch group for tracking */
-function setPollInProgress(member_id, group_name, flag) {
-  return new Promise(resolve => {
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // update poll result columns in table
-      client.query('UPDATE ' + TABLE_NAME + ' SET poll_in_progress=$1 WHERE person_id=$2 AND group_name=$3;',
-      [flag, member_id, group_name], function(err, res) {
-        if (err) throw err;
-        client.end(function(err) {
-          if (err) throw err;
-          resolve('poll in progress flag set');
-        });
-      });
-    });
-  });
-}
-
-/* Helper function to save poll result to PostgreSQL */
-function savePollResult(result, member_id, group_name) {
-  return new Promise(async (resolve) => {
-    await setPollInProgress(member_id, group_name, false);
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // update poll result columns in table
-      client.query('UPDATE ' + TABLE_NAME + ' SET in_the_office=$1, in_for_lunch=$2, comments=$3 WHERE person_id=$4 AND group_name=$5;',
-      [result.in_the_office, result.in_for_lunch, result.comments, member_id, group_name], function(err, res) {
-        if (err) throw err;
-        client.end(function(err) {
-          if (err) throw err;
-          resolve('saved');
-        });
-      });
-    });
-  });
 }
 
 /* Helper function to poll member */
@@ -146,10 +190,9 @@ async function PollMember(requestor_name, member, group_name, bot) {
     }
 
     // In The Office Conversation thread - survey presence in office
-    convo.addQuestion('Are you in the office today? Reply with YES or NO.',[
-      {
+    convo.addQuestion('Are you in the office today? Reply with YES or NO.', [{
         pattern: bot.utterances.yes,
-        callback: function(response,convo) {
+        callback: function(response, convo) {
           result.in_the_office = true;
           convo.gotoThread('in_for_lunch');
           convo.next();
@@ -157,7 +200,7 @@ async function PollMember(requestor_name, member, group_name, bot) {
       },
       {
         pattern: bot.utterances.no,
-        callback: function(response,convo) {
+        callback: function(response, convo) {
           result.in_the_office = false;
           convo.gotoThread('comments');
           convo.next();
@@ -165,19 +208,18 @@ async function PollMember(requestor_name, member, group_name, bot) {
       },
       {
         default: true,
-        callback: function(response,convo) {
+        callback: function(response, convo) {
           // just repeat the question
           convo.gotoThread('default');
           convo.next();
         }
       }
-    ],{},'default');
+    ], {}, 'default');
 
     // In For Lunch Conversation thread - survey lunch availability
-    convo.addQuestion('Are you available for lunch? Reply with YES or NO.',[
-      {
+    convo.addQuestion('Are you available for lunch? Reply with YES or NO.', [{
         pattern: bot.utterances.yes,
-        callback: function(response,convo) {
+        callback: function(response, convo) {
           result.in_for_lunch = true;
           convo.gotoThread('comments');
           convo.next();
@@ -185,7 +227,7 @@ async function PollMember(requestor_name, member, group_name, bot) {
       },
       {
         pattern: bot.utterances.no,
-        callback: function(response,convo) {
+        callback: function(response, convo) {
           result.in_for_lunch = false;
           convo.gotoThread('comments');
           convo.next();
@@ -193,19 +235,18 @@ async function PollMember(requestor_name, member, group_name, bot) {
       },
       {
         default: true,
-        callback: function(response,convo) {
+        callback: function(response, convo) {
           // just repeat the question
           convo.gotoThread('in_for_lunch');
           convo.next();
         }
       }
-    ],{},'in_for_lunch');
+    ], {}, 'in_for_lunch');
 
     // Comments Conversation Thread for leaving additional messages
-    convo.addQuestion('If you wish to leave a message, please type it here (80 character limit). Otherwise say NO.', [
-      {
+    convo.addQuestion('If you wish to leave a message, please type it here (80 character limit). Otherwise say NO.', [{
         pattern: bot.utterances.no,
-        callback: async function(response,convo) {
+        callback: async function(response, convo) {
           await savePollResult(result, member.id, group_name);
           convo.say('Thank you for your response! Poll has ended.');
           convo.next('stop');
@@ -213,7 +254,7 @@ async function PollMember(requestor_name, member, group_name, bot) {
       },
       {
         default: true,
-        callback: async function(response,convo) {
+        callback: async function(response, convo) {
           // if exceeds char limit just repeat the question
           if (response.text.length > 80) {
             convo.gotoThread('comments');
@@ -226,7 +267,7 @@ async function PollMember(requestor_name, member, group_name, bot) {
           }
         }
       }
-    ],{},'comments');
+    ], {}, 'comments');
   });
 }
 
@@ -274,29 +315,30 @@ function GetPollResults(group_name, user_id) {
     if (err) throw err;
     // get poll results by group_name
     client.query('SELECT person_name, in_the_office, in_for_lunch, comments FROM ' +
-    TABLE_NAME + ' WHERE group_name=$1 AND person_id!=$2 AND in_the_office IS NOT NULL;',
-    [group_name, user_id], function(err, res) {
-      if (err) throw err;
-      client.end(function(err) {
+      TABLE_NAME + ' WHERE group_name=$1 AND person_id!=$2 AND in_the_office IS NOT NULL;',
+      [group_name, user_id],
+      function(err, res) {
         if (err) throw err;
-        if (res.rows.length != 0) {
-          var rows = res.rows;
-          rows.forEach( row => {
-            var result = {
-              person_name: row.person_name,
-              in_the_office: row.in_the_office,
-              in_for_lunch: row.in_for_lunch,
-              comments: row.comments
-            };
-            results.push(result);
-          });
-          deferred.resolve(results);
-        } else {
-          var err = 'No poll results to display right now.';
-          deferred.reject(err);
-        }
+        client.end(function(err) {
+          if (err) throw err;
+          if (res.rows.length != 0) {
+            var rows = res.rows;
+            rows.forEach(row => {
+              var result = {
+                person_name: row.person_name,
+                in_the_office: row.in_the_office,
+                in_for_lunch: row.in_for_lunch,
+                comments: row.comments
+              };
+              results.push(result);
+            });
+            deferred.resolve(results);
+          } else {
+            var err = 'No poll results to display right now.';
+            deferred.reject(err);
+          }
+        });
       });
-    });
   });
   return deferred.promise;
 }
@@ -311,16 +353,17 @@ function getPollersInProgress(group_name) {
       if (err) throw err;
       // get pollers who are in progress
       client.query('SELECT person_name FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_in_progress=$2;',
-      [group_name, true], function(err, res) {
-        if (err) throw err;
-        client.end(function(err) {
+        [group_name, true],
+        function(err, res) {
           if (err) throw err;
-          res.rows.forEach( row => {
-            in_progress_pollers.push(row.person_name);
+          client.end(function(err) {
+            if (err) throw err;
+            res.rows.forEach(row => {
+              in_progress_pollers.push(row.person_name);
+            });
+            resolve(in_progress_pollers);
           });
-          resolve(in_progress_pollers);
         });
-      });
     });
   });
 }
@@ -329,40 +372,40 @@ function getPollersInProgress(group_name) {
 async function BuildResultsText(results, group_name) {
   var text = '';
   // In for lunch section
-  var in_for_lunch_arr = results.filter( result => result.in_for_lunch );
+  var in_for_lunch_arr = results.filter(result => result.in_for_lunch);
   if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
-    in_for_lunch_arr.forEach( obj => {
+    in_for_lunch_arr.forEach(obj => {
       text += '- ' + obj.person_name + '\n';
     });
   } else {
     text += '\nNo-one is in for lunch today \u{1f648}\n';
   }
   // In the office but not in for lunch section
-  var in_the_office_arr = results.filter( result => (result.in_the_office && !result.in_for_lunch));
+  var in_the_office_arr = results.filter(result => (result.in_the_office && !result.in_for_lunch));
   if (in_the_office_arr.length != 0) {
     text += '\n\u{1f3e2} In The Office But Not In For Lunch:\n';
-    in_the_office_arr.forEach( obj => {
+    in_the_office_arr.forEach(obj => {
       text += '- ' + obj.person_name + '\n';
     });
   }
   // Out of office section
-  var out_of_office_arr = results.filter( result => !result.in_the_office );
+  var out_of_office_arr = results.filter(result => !result.in_the_office);
   if (results.length == out_of_office_arr.length) {
     text += '\nNo-one is in the office today \u{1f63f}\n';
   } else if (out_of_office_arr.length != 0) {
     text += '\n\u{1f3d6} Out Of Office:\n';
-    out_of_office_arr.forEach( obj => {
+    out_of_office_arr.forEach(obj => {
       text += '- ' + obj.person_name + '\n';
     });
   } else {
     text += '\nEveryone is in the office today! \u{1f4aa}\n';
   }
   // Comments section
-  var comments_arr = results.filter( result => result.comments.length != 0 );
+  var comments_arr = results.filter(result => result.comments.length != 0);
   if (comments_arr.length != 0) {
     text += '\n\u{1f4ac} Comments:\n';
-    comments_arr.forEach( obj => {
+    comments_arr.forEach(obj => {
       text += '- ' + obj.person_name + ' says: ' + obj.comments + '\n';
     });
   }
@@ -370,7 +413,7 @@ async function BuildResultsText(results, group_name) {
   var in_progress_pollers = await getPollersInProgress(group_name);
   if (in_progress_pollers.length != 0) {
     text += '\n\u{1f937} Yet to complete poll:\n';
-    in_progress_pollers.forEach( poller => {
+    in_progress_pollers.forEach(poller => {
       text += '- ' + poller + '\n';
     });
   } else {

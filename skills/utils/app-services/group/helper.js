@@ -106,8 +106,8 @@ function AddTableEntry(member, group_name) {
     client.connect(function(err) {
       if (err) throw err;
       // insert lunch group table entry
-      client.query('INSERT INTO ' + TABLE_NAME + ' (person_id, person_name, group_name, admin, status, poll_in_progress) VALUES ($1, $2, $3, $4, $5, $6);',
-        [member.id, member.name, group_name, member.admin, member.status, false],
+      client.query('INSERT INTO ' + TABLE_NAME + ' (person_id, person_name, group_name, admin, status, poll_in_progress, poll_started) VALUES ($1, $2, $3, $4, $5, $6, $7);',
+        [member.id, member.name, group_name, member.admin, member.status, false, false],
         function(err) {
           if (err) throw err;
           client.end(function(err) {
