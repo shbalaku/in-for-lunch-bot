@@ -40,7 +40,7 @@ function GetGroupsByPersonId(id) {
       } else {
         client.end(function(err) {
           if (err) throw err;
-          deferred.reject('You are not part of any lunch group.');
+          deferred.reject('You are not part of any lunch group \u{1f9d0}');
         });
       }
     });
@@ -55,7 +55,7 @@ function BuildText(groups) {
   groups.list.forEach( group => {
     text += '- ' + group;
     if (group == primary_group) {
-      text += ' (preferred group)';
+      text += ' (preferred group \u{1f60d})';
     }
     text += '\n';
   });

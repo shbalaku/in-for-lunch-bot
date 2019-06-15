@@ -27,7 +27,8 @@ function ValidateInputSyntax(input) {
   var resp = {};
   var input_arr = input.trim().replace(/[^\x00-\x7F]/g, "").split(' ');
   if (input_arr.length < 2) { // testing value = 1, prod value = 2
-    var err = 'Usage: group [ group_name cec1 cec2 ]. E.g. group hogwarts hpotter rweasley. One or more CECs required.';
+    var err = 'Usage: `group <group_name> <cec1> <cec2>`. E.g. `group hogwarts hpotter rweasley`.' +
+    + 'One or more CECs required (excluding your own).';
     deferred.reject(err);
   } else {
     resp.group_name = input_arr[0].toUpperCase();
@@ -67,7 +68,7 @@ async function ValidateCECs(cecs, admin_id) {
   valid_members.push(admin);
   // Validation
   if (valid_members.length < 2) { // testing value = 1, prod value = 2
-    var err = 'One or more valid CECs are required (excluding your own). Please check your inputs and try again.';
+    var err = '\u{274c} One or more valid CECs are required (excluding your own). Please check your inputs and try again.';
     deferred.reject(err);
   } else {
     deferred.resolve(valid_members);
@@ -90,7 +91,7 @@ function ValidateGroup(group_name) {
         if (res.rows.length == 0) {
           deferred.resolve();
         } else {
-          deferred.reject('Lunch group: "' + group_name + '" already exists. Please select another name.');
+          deferred.reject('Lunch group: "' + group_name + '" already exists \u{1f62c} Please select another name.');
         }
       });
     });
@@ -107,13 +108,14 @@ function AddTableEntry(member, group_name) {
       if (err) throw err;
       // insert lunch group table entry
       client.query('INSERT INTO ' + TABLE_NAME + ' (person_id, person_name, group_name, admin, status, poll_in_progress) VALUES ($1, $2, $3, $4, $5, $6);',
-       [member.id, member.name, group_name, member.admin, member.status, false], function(err) {
-        if (err) throw err;
-        client.end(function(err) {
+        [member.id, member.name, group_name, member.admin, member.status, false],
+        function(err) {
           if (err) throw err;
-          resolve();
+          client.end(function(err) {
+            if (err) throw err;
+            resolve();
+          });
         });
-      });
     });
   });
 }
@@ -152,13 +154,14 @@ function AddPersonToGroup(person, group_name) {
         if (status == 'pending') {
           // Update member's status as accepted
           client.query('UPDATE ' + TABLE_NAME + ' SET status=$1 WHERE person_id=$2 AND group_name=$3;',
-          ['accepted', person.id, group_name], function(err) {
-            if (err) throw err;
-            client.end(function(err) {
-              var msg = 'Success! You are now part of the ' + group_name + ' lunch group!';
-              deferred.resolve(msg);
+            ['accepted', person.id, group_name],
+            function(err) {
+              if (err) throw err;
+              client.end(function(err) {
+                var msg = '\u{2705} Success! You are now part of the ' + group_name + ' lunch group!';
+                deferred.resolve(msg);
+              });
             });
-          });
         } else {
           var err = 'You have already joined the ' + group_name + ' lunch group.';
           deferred.reject(err);
@@ -168,7 +171,7 @@ function AddPersonToGroup(person, group_name) {
         await AddTableEntry(person, group_name);
         client.end(function(err) {
           if (err) throw err;
-          var msg = 'Success! You are now part of the ' + group_name + ' lunch group!';
+          var msg = '\u{2705} Success! You are now part of the ' + group_name + ' lunch group!';
           deferred.resolve(msg);
         });
       }
@@ -191,11 +194,11 @@ function RemovePersonFromGroup(person, group_name) {
         await RemoveTableEntry(person.id, group_name);
         client.end(function(err) {
           if (err) throw err;
-          var msg = 'No worries. You have been removed from the ' + group_name + ' lunch group.';
+          var msg = 'No worries \u{1f60e} You have been removed from the ' + group_name + ' lunch group.';
           deferred.resolve(msg);
         });
       } else {
-        var err = person.name + ' is not part of the ' + group_name + ' lunch group.';
+        var err = person.name + ' is not part of the ' + group_name + ' lunch group \u{1f914}';
         deferred.reject(err);
       }
     });
@@ -212,13 +215,14 @@ function SetPrimaryGroupForPerson(group_name, user_id) {
       if (err) throw err;
       // update primary group column in table for user_id
       client.query('UPDATE ' + TABLE_NAME + ' SET primary_group=$1 WHERE person_id=$2;',
-      [group_name, user_id], function(err, res) {
-        if (err) throw err;
-        client.end(function(err) {
+        [group_name, user_id],
+        function(err, res) {
           if (err) throw err;
-          resolve('primary group set');
+          client.end(function(err) {
+            if (err) throw err;
+            resolve('primary group set');
+          });
         });
-      });
     });
   });
 }
