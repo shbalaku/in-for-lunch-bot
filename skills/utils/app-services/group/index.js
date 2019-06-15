@@ -121,15 +121,21 @@ function SetPrimaryGroup(query) {
   // Process input
   var input = query.match[1];
   var user_id = query.data.personId;
-  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
-  // Validate group
-  CommonService.ValidateGroup(group_name)
-    .then(function() {
-      CommonService.ValidatePersonInGroup(user_id, group_name)
-        .then(async function() {
-          // Validation complete
-          await HelperService.SetPrimaryGroupForPerson(group_name, user_id);
-          deferred.resolve('Success! Your preferences have been updated.');
+  // Validate command syntax
+  validateSyntax(input)
+    .then(function(group_name) {
+      // Validate group
+      CommonService.ValidateGroup(group_name)
+        .then(function() {
+          CommonService.ValidatePersonInGroup(user_id, group_name)
+            .then(async function() {
+              // Validation complete
+              await HelperService.SetPrimaryGroupForPerson(group_name, user_id);
+              deferred.resolve('Success! Your preferences have been updated.');
+            })
+            .catch(function(error) {
+              deferred.reject(error);
+            });
         })
         .catch(function(error) {
           deferred.reject(error);
@@ -138,5 +144,17 @@ function SetPrimaryGroup(query) {
     .catch(function(error) {
       deferred.reject(error);
     });
+    
+  // Helper function to validate syntax of command
+  validateSyntax(input){
+    var _deferred = Q.defer();
+    var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
+    if (group_name.length == 0) {
+      _deferred.reject('Usage: set-default <group_name>');
+    } else {
+      _deferred.resolve(group_name);
+    }
+    return _deferred.promise;
+  }
   return deferred.promise;
 }
