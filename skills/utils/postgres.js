@@ -11,7 +11,7 @@ module.exports = service;
 function CreateClient() {
   const client = new Client({
     connectionString: process.env.DATABASE_URL
-    // ssl: true
+    ssl: true
   });
   return client;
 }
