@@ -144,9 +144,9 @@ function SetPrimaryGroup(query) {
     .catch(function(error) {
       deferred.reject(error);
     });
-    
+
   // Helper function to validate syntax of command
-  validateSyntax(input){
+  function validateSyntax(input){
     var _deferred = Q.defer();
     var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
     if (group_name.length == 0) {
