@@ -12,7 +12,7 @@ function Controller(controller) {
   //
   // Command: group <name> <cec1> <cec2> ...
   //
-  controller.hears('group (.*)', 'direct_message,direct_mention', function(bot, message) {
+  controller.hears('group(.*)', 'direct_message,direct_mention', function(bot, message) {
     GroupService.CreateGroup(message)
       .then(function(resp) {
         bot.reply(message, resp.group_name + ' lunch group has been created. Group members have been invited.');
@@ -61,7 +61,7 @@ function Controller(controller) {
   //
   // Command: set-default <group>
   //
-  controller.hears('set-default (.*)', 'direct_message,direct_mention', function(bot, message) {
+  controller.hears('set-default(.*)', 'direct_message,direct_mention', function(bot, message) {
     GroupService.SetPrimaryGroup(message)
       .then(function(text) {
         bot.reply(message, text);
