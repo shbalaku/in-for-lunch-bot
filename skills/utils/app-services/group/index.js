@@ -150,7 +150,7 @@ function SetPrimaryGroup(query) {
     var _deferred = Q.defer();
     var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
     if (group_name.length == 0) {
-      _deferred.reject('Usage: set-default <group_name>');
+      _deferred.reject('Usage: `set-default <group_name>`');
     } else {
       _deferred.resolve(group_name);
     }
