@@ -26,10 +26,9 @@ function NotifyGroupJoin(obj, bot) {
       if (err) throw err;
       // Start conversation
       convo.sayFirst(obj.admin_name + ' has invited you to join the ' + obj.group_name + ' lunch group!');
-      convo.addQuestion('To accept/decline, please reply yes or no.',[
-        {
+      convo.addQuestion('To accept/decline, please reply yes or no.', [{
           pattern: bot.utterances.yes,
-          callback: function(response,convo) {
+          callback: function(response, convo) {
             HelperService.AddPersonToGroup(pending_member, obj.group_name)
               .then(function(msg) {
                 convo.say(msg);
@@ -44,7 +43,7 @@ function NotifyGroupJoin(obj, bot) {
         },
         {
           pattern: bot.utterances.no,
-          callback: function(response,convo) {
+          callback: function(response, convo) {
             HelperService.RemovePersonFromGroup(pending_member, obj.group_name)
               .then(function(msg) {
                 convo.say(msg);
@@ -59,15 +58,17 @@ function NotifyGroupJoin(obj, bot) {
         },
         {
           default: true,
-          callback: function(response,convo) {
+          callback: function(response, convo) {
             // just repeat the question
             convo.gotoThread('default');
             convo.next();
           }
         }
-      ],{},'default');
+      ], {}, 'default');
       // Error thread
-      convo.addMessage({text: '\u274c Oh no I had an error! {{vars.error}}'},'error');
+      convo.addMessage({
+        text: '\u274c Oh no I had an error! {{vars.error}}'
+      }, 'error');
     });
   });
 }
@@ -93,10 +94,10 @@ function CreateGroup(query) {
               var members_total = group_members.length;
               // Build response object
               response.group_name = group_name;
-              response.admin_name = group_members[members_total-1].name;
+              response.admin_name = group_members[members_total - 1].name;
               response.pending_members = group_members.filter(member => member.status == 'pending');
               // Add verified table column entries
-              group_members.forEach( async (member) => {
+              group_members.forEach(async (member) => {
                 await HelperService.AddTableEntry(member, group_name);
               });
               deferred.resolve(response);
@@ -146,7 +147,7 @@ function SetPrimaryGroup(query) {
     });
 
   // Helper function to validate syntax of command
-  function validateSyntax(input){
+  function validateSyntax(input) {
     var _deferred = Q.defer();
     var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
     if (group_name.length == 0) {

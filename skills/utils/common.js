@@ -53,18 +53,19 @@ function GetPrimaryGroupById(id) {
     if (err) throw err;
     // select primary group entry based on person ID
     client.query('SELECT DISTINCT primary_group FROM ' + TABLE_NAME + ' WHERE person_id=$1 AND primary_group IS NOT NULL;',
-    [id], function(err, res) {
-      if (err) throw err;
-      client.end(function(err) {
+      [id],
+      function(err, res) {
         if (err) throw err;
-        if (res.rows.length == 1) {
-          var primary_group = res.rows[0].primary_group;
-          deferred.resolve(primary_group);
-        } else {
-          deferred.reject('You need to select your preferred lunch group using commmand: `set-default <group_name>`');
-        }
+        client.end(function(err) {
+          if (err) throw err;
+          if (res.rows.length == 1) {
+            var primary_group = res.rows[0].primary_group;
+            deferred.resolve(primary_group);
+          } else {
+            deferred.reject('You need to select your preferred lunch group using commmand: `set-default <group_name>`');
+          }
+        });
       });
-    });
   });
   return deferred.promise;
 }
@@ -78,24 +79,25 @@ function GetMembersByGroupName(group_name) {
     if (err) throw err;
     // select persons as member of group and their member status
     client.query('SELECT person_id, person_name, status FROM ' + TABLE_NAME + ' WHERE group_name=$1;',
-    [group_name], function(err, res) {
-      if (err) throw err;
-      client.end(function(err) {
+      [group_name],
+      function(err, res) {
         if (err) throw err;
-        var members = [];
-        var rows = res.rows;
-        rows.forEach( row => {
-          members.push({
-            id: row.person_id,
-            name: row.person_name
+        client.end(function(err) {
+          if (err) throw err;
+          var members = [];
+          var rows = res.rows;
+          rows.forEach(row => {
+            members.push({
+              id: row.person_id,
+              name: row.person_name
+            });
+            if (row.status == 'pending') {
+              deferred.reject('Everyone in the group must join before you start a poll.');
+            }
           });
-          if (row.status == 'pending') {
-            deferred.reject('Everyone in the group must join before you start a poll.');
-          }
+          deferred.resolve(members);
         });
-        deferred.resolve(members);
       });
-    });
   });
   return deferred.promise;
 }

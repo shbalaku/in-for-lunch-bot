@@ -52,7 +52,7 @@ function GetGroupsByPersonId(id) {
 function BuildText(groups) {
   var text = 'Your lunch groups:\n';
   var primary_group = groups.primary_group;
-  groups.list.forEach( group => {
+  groups.list.forEach(group => {
     text += '- ' + group;
     if (group == primary_group) {
       text += ' (preferred group \u{1f60d})';
