@@ -27,7 +27,12 @@ function ValidateInputSyntax(input) {
   var resp = {};
   var input_arr = input.trim().replace(/[^\x00-\x7F]/g, "").split(' ');
   if (input_arr.length < 2) { // testing value = 1, prod value = 2
+<<<<<<< HEAD
     var err = 'Usage: `group <group_name> <cec1> <cec2>`. E.g. `group hogwarts hpotter rweasley`. One or more CECs required (excluding your own).';
+=======
+    var err = 'Usage: `group <group_name> <cec1> <cec2>`. E.g. `group hogwarts hpotter rweasley`.' +
+    + 'One or more CECs required (excluding your own).';
+>>>>>>> 23a6852b8307131870ec4f732afa614327adf3c5
     deferred.reject(err);
   } else {
     resp.group_name = input_arr[0].toUpperCase();
@@ -67,7 +72,11 @@ async function ValidateCECs(cecs, admin_id) {
   valid_members.push(admin);
   // Validation
   if (valid_members.length < 2) { // testing value = 1, prod value = 2
+<<<<<<< HEAD
     var err = '\u274c One or more valid CECs are required (excluding your own). Please check your inputs and try again.';
+=======
+    var err = '\u{274c} One or more valid CECs are required (excluding your own). Please check your inputs and try again.';
+>>>>>>> 23a6852b8307131870ec4f732afa614327adf3c5
     deferred.reject(err);
   } else {
     deferred.resolve(valid_members);
@@ -157,7 +166,11 @@ function AddPersonToGroup(person, group_name) {
             function(err) {
               if (err) throw err;
               client.end(function(err) {
+<<<<<<< HEAD
                 var msg = '\u2705 Success! You are now part of the ' + group_name + ' lunch group!';
+=======
+                var msg = '\u{2705} Success! You are now part of the ' + group_name + ' lunch group!';
+>>>>>>> 23a6852b8307131870ec4f732afa614327adf3c5
                 deferred.resolve(msg);
               });
             });
@@ -170,7 +183,11 @@ function AddPersonToGroup(person, group_name) {
         await AddTableEntry(person, group_name);
         client.end(function(err) {
           if (err) throw err;
+<<<<<<< HEAD
           var msg = '\u2705 Success! You are now part of the ' + group_name + ' lunch group!';
+=======
+          var msg = '\u{2705} Success! You are now part of the ' + group_name + ' lunch group!';
+>>>>>>> 23a6852b8307131870ec4f732afa614327adf3c5
           deferred.resolve(msg);
         });
       }

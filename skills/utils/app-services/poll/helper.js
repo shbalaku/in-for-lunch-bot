@@ -35,7 +35,11 @@ function validatePoll(group_name) {
         if (res.rows.length == 0) {
           deferred.resolve('poll request valid');
         } else {
+<<<<<<< HEAD
           deferred.reject('A poll is currently in progress \u23f3 You must wait until the poll completes to start a new poll.');
+=======
+          deferred.reject('A poll is currently in progress \u{23f3} You must wait until the poll completes to start a new poll.');
+>>>>>>> 23a6852b8307131870ec4f732afa614327adf3c5
         }
       });
     });

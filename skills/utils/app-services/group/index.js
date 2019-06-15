@@ -67,7 +67,11 @@ function NotifyGroupJoin(obj, bot) {
         }
       ],{},'default');
       // Error thread
+<<<<<<< HEAD
       convo.addMessage({text: '\u274c Oh no I had an error! {{vars.error}}'},'error');
+=======
+      convo.addMessage({text: '\u{274c} Oh no I had an error! {{vars.error}}'},'error');
+>>>>>>> 23a6852b8307131870ec4f732afa614327adf3c5
     });
   });
 }
@@ -131,7 +135,11 @@ function SetPrimaryGroup(query) {
             .then(async function() {
               // Validation complete
               await HelperService.SetPrimaryGroupForPerson(group_name, user_id);
+<<<<<<< HEAD
               deferred.resolve('\u2705 Success! Your preferences have been updated.');
+=======
+              deferred.resolve('\u{2705} Success! Your preferences have been updated.');
+>>>>>>> 23a6852b8307131870ec4f732afa614327adf3c5
             })
             .catch(function(error) {
               deferred.reject(error);
