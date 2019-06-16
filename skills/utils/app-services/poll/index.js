@@ -62,8 +62,8 @@ function GetPollResults(message) {
   HelperService.ValidateResultsInput(input, user_id)
     .then(function(group_name) {
       HelperService.GetPollResults(group_name, user_id)
-        .then(function(results) {
-          text = HelperService.BuildResultsText(results, group_name);
+        .then(function(results_obj) {
+          text = HelperService.BuildResultsText(results_obj, group_name);
           deferred.resolve(text);
         })
         .catch(function(error) {

@@ -328,15 +328,15 @@ function GetPollResults(group_name, user_id) {
   client.connect(function(err) {
     if (err) throw err;
     // get poll results by group_name
-    client.query('SELECT person_name, poll_result FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id!=$2 AND poll_result IS NOT NULL;',
+    client.query('SELECT person_name AS name, poll_result AS result FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id!=$2 AND poll_result IS NOT NULL;',
       [group_name, user_id],
       function(err, res) {
         if (err) throw err;
         client.end(function(err) {
           if (err) throw err;
           if (res.rows.length != 0) {
-            var rows = res.rows;
-            deferred.resolve(rows);
+            var obj = res.rows;
+            deferred.resolve(obj);
           } else {
             var err = 'No poll results to display right now.';
             deferred.reject(err);
@@ -373,44 +373,45 @@ function getPollersInProgress(group_name) {
 }
 
 /* Helper service to write text string of poll results displayed back to user */
-async function BuildResultsText(results, group_name) {
+async function BuildResultsText(results_obj, group_name) {
+  console.log(results_obj);
   var text = '';
   // In for lunch section
-  var in_for_lunch_arr = results.filter(result => result.poll_result.in_for_lunch);
+  var in_for_lunch_arr = results_obj.filter(result => results_obj.result.in_for_lunch);
   if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach(obj => {
-      text += '- ' + obj.person_name + '\n';
+      text += '- ' + obj.name + '\n';
     });
   } else {
     text += '\nNo-one is in for lunch today \u{1f648}\n';
   }
   // In the office but not in for lunch section
-  var in_the_office_arr = results.filter(result => (result.poll_result.in_the_office && !result.poll_result.in_for_lunch));
+  var in_the_office_arr = results_obj.filter(obj => (obj.result.in_the_office && !results_obj.result.in_for_lunch));
   if (in_the_office_arr.length != 0) {
     text += '\n\u{1f3e2} In The Office But Not In For Lunch:\n';
     in_the_office_arr.forEach(obj => {
-      text += '- ' + obj.person_name + '\n';
+      text += '- ' + obj.name + '\n';
     });
   }
   // Out of office section
-  var out_of_office_arr = results.filter(result => !result.poll_result.in_the_office);
-  if (results.length == out_of_office_arr.length) {
+  var out_of_office_arr = results_obj.filter(obj => !obj.result.in_the_office);
+  if (results_obj.length == out_of_office_arr.length) {
     text += '\nNo-one is in the office today \u{1f63f}\n';
   } else if (out_of_office_arr.length != 0) {
     text += '\n\u{1f3d6} Out Of Office:\n';
     out_of_office_arr.forEach(obj => {
-      text += '- ' + obj.person_name + '\n';
+      text += '- ' + obj.name + '\n';
     });
   } else {
     text += '\nEveryone is in the office today! \u{1f4aa}\n';
   }
   // Comments section
-  var comments_arr = results.filter(result => result.poll_result.comments.length != 0);
+  var comments_arr = results_obj.filter(obj => obj.poll_result.comments.length != 0);
   if (comments_arr.length != 0) {
     text += '\n\u{1f4ac} Comments:\n';
     comments_arr.forEach(obj => {
-      text += '- ' + obj.person_name + ' says: ' + obj.poll_result.comments + '\n';
+      text += '- ' + obj.name + ' says: ' + obj.result.comments + '\n';
     });
   }
   // Members yet to complete poll section
