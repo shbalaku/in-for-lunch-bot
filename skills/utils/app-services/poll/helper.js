@@ -215,21 +215,41 @@ function GetPollResults(group_name, user_id) {
 
 /* Helper service to write text string of poll results displayed back to user */
 async function BuildResultsText(results_obj, group_name) {
+  // Initialisation
   var text = '';
   var question_day = '';
+
+  // Determine which day is in question for the poll
   CommonService.IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
-  // In for lunch section
+
+  // Filtered results arrays
   var in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
+  var in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
+  var out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
+  var comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
+
+  // Noone being in statements
+  if (results_obj.length != out_of_office_arr.length) {
+    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f648}\n';
+  } else {
+    text += '\nNo-one is in the office ' + question_day + ' \u{1f63f}\n';
+  }
+
+  // Everyone being in statements
+  if (results_obj.length == in_for_lunch_arr.length) {
+    text += '\nEveryone is free for lunch ' + question_day + '!\u{1f603}\n';
+  } else if (out_of_office_arr.length == 0) {
+    text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
+  }
+
+  // In for lunch section
   if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
-  } else {
-    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f648}\n';
   }
   // In the office but not in for lunch section
-  var in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
   if (in_the_office_arr.length != 0) {
     text += '\n\u{1f3e2} In The Office But Not Free For Lunch:\n';
     in_the_office_arr.forEach(obj => {
@@ -237,19 +257,13 @@ async function BuildResultsText(results_obj, group_name) {
     });
   }
   // Out of office section
-  var out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
-  if (results_obj.length == out_of_office_arr.length) {
-    text += '\nNo-one is in the office ' + question_day + ' \u{1f63f}\n';
-  } else if (out_of_office_arr.length != 0) {
+  if (out_of_office_arr.length != 0) {
     text += '\n\u{1f3d6} Out Of Office:\n';
     out_of_office_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
-  } else {
-    text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
   }
   // Comments section
-  var comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
   if (comments_arr.length != 0) {
     text += '\n\u{1f4ac} Comments:\n';
     comments_arr.forEach(obj => {
