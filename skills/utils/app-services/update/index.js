@@ -19,7 +19,7 @@ function UpdatePoll(bot, message) {
   var deferred = Q.defer();
   var user_id = message.data.personId;
   var input = message.match[1];
-  HelperService.ValidateInput(input)
+  HelperService.ValidateInput(input, user_id)
     .then(function(group_name){
       HelperService.ValidatePollStarted(group_name, user_id)
         .then(async function() {
