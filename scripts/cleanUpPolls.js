@@ -56,7 +56,7 @@ function main() {
       groups.forEach( async (group) => {
         timestamp = await CommonService.GetPollTimestamp(group.name);
         var time_passed = Date.now() - timestamp;
-        if (time_passed > 1000 * 60) {
+        if (time_passed != -1 && time_passed > 1000 * 60) {
           await cleanUpPoll(group.name);
         }
       });
