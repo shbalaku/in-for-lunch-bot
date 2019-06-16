@@ -243,7 +243,7 @@ async function BuildResultsText(results_obj, group_name) {
     text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
   }
   // In for lunch section
-  if (in_for_lunch_arr.length != 0) {
+  if (in_for_lunch_arr.length != 0 && !everyone_is_in) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
