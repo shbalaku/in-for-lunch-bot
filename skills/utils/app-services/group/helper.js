@@ -25,14 +25,39 @@ module.exports = service;
 function ValidateInputSyntax(input) {
   var deferred = Q.defer();
   var resp = {};
-  var input_arr = input.trim().replace(/[^\x00-\x7F]/g, "").split(' ');
-  if (input_arr.length < 2) { // testing value = 1, prod value = 2
-    var err = 'Usage: `group <group_name> <cec1> [ <cec2> ... ]`. E.g. `group hogwarts hpotter rweasley`. One or more CECs required (excluding your own).';
-    deferred.reject(err);
+  //trim and remove non-ASCII text and excess whitespace
+  var inputFormat = input.trim().replace(/[^\x00-\x7F]/g,"").replace(/\s+/g," ");
+  //check input includes "-name" and "-add"
+  var splitInputArr = inputFormat.split(" ");
+  if (splitInputArr.includes('-name') && splitInputArr.includes('-add')) {
+    // Get indices of flags in splitInput array
+    var nameFlagIdx = splitInputArr.lastIndexOf('-name');
+    var addFlagIdx = splitInputArr.lastIndexOf('-add');
+    // Validate flags are in right order
+    if (nameFlagIdx > addFlagIdx) {
+      // ERROR: INVALID INPUT FORMAT
+      deferred.reject(syntaxError());
+    }
+    // Get group name and cec values
+    var groupArr = splitInputArr.slice(nameFlagIdx + 1, addFlagIdx);
+    var cecArr = splitInputArr.slice(addFlagIdx + 1, splitInputArr.length);
+    //check a group name is given
+    if (groupArr.length > 0 && cecArr.length > 0) {
+      resp.group_name = groupArr.join(" ").toUpperCase();
+      resp.cecs = cecArr;
+      deferred.resolve(resp);
+    } else {
+      // ERROR: INVALID INPUT FORMAT
+      deferred.reject(syntaxError());
+    }
   } else {
-    resp.group_name = input_arr[0].toUpperCase();
-    resp.cecs = input_arr.slice(1, input_arr.length);
-    deferred.resolve(resp);
+    // ERROR: INVALID INPUT FORMAT
+    deferred.reject(syntaxError());
+  }
+  /* Syntax error */
+  function syntaxError() {
+    var err = 'Usage: `group <group_name> <cec1> [ <cec2> ... ]`. E.g. `group hogwarts hpotter rweasley`. One or more CECs required (excluding your own).';
+    return err;
   }
   return deferred.promise;
 }
