@@ -6,7 +6,7 @@ const PATH = process.env.PATH;
 const TABLE_NAME = process.env.TABLE_NAME;
 
 // CONSTANTS
-const POLL_HOLD_INTERVAL = 1000 * 60 * 60 * 8;
+const POLL_HOLD_INTERVAL = 1000 * 60 * 60 * 12;
 
 /* LOAD CLIENTS/MODULES */
 const PostgreSQL = require(PATH + '/skills/utils/postgres');
