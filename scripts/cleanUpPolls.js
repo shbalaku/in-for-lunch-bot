@@ -55,9 +55,11 @@ function main() {
     .then(function(groups) {
       groups.forEach( async (group) => {
         timestamp = await CommonService.GetPollTimestamp(group.name);
-        var time_passed = Date.now() - timestamp;
-        if (time_passed != -1 && time_passed > 1000 * 60 * 60 * 24s) {
-          await cleanUpPoll(group.name);
+        if (timestamp != -1) {
+          var time_passed = Date.now() - timestamp;
+          if (time_passed > 1000 * 60 * 60 * 24) {
+            await cleanUpPoll(group.name);
+          }
         }
       });
     })
