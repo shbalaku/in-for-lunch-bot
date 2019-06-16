@@ -184,10 +184,23 @@ function MembersHaveJoined(group_name) {
   return deferred.promise;
 }
 
+/* Helper function to check if it is after 1 pm */
+function isItAfter2PM() {
+  var now = new Date();
+  var hour = now.getUTCHours();
+  if (hour >= 14) {
+    return true;
+  }
+  return false;
+}
+
 /* Helper function to poll member */
 async function PollMember(requestor_name, member, group_name, bot) {
   // Set poll in progress flag for member of group
   await setPollInProgress(member.id, group_name, true);
+  // Control flow for time of day
+  var question_day = '';
+  isItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
   // Start Conversation with Poll Questions
   bot.startPrivateConversationWithPersonId(member.id, function(err, convo) {
     if (err) throw err;
@@ -205,7 +218,7 @@ async function PollMember(requestor_name, member, group_name, bot) {
     }
 
     // In The Office Conversation thread - survey presence in office
-    convo.addQuestion('Are you in the office today? Reply with YES or NO.', [{
+    convo.addQuestion('Are you in the office ' + question_day + '? Reply with YES or NO.', [{
         pattern: bot.utterances.yes,
         callback: function(response, convo) {
           result.in_the_office = true;
@@ -232,7 +245,7 @@ async function PollMember(requestor_name, member, group_name, bot) {
     ], {}, 'default');
 
     // In For Lunch Conversation thread - survey lunch availability
-    convo.addQuestion('Are you available for lunch today? Reply with YES or NO.', [{
+    convo.addQuestion('Are you available for lunch ' + question_day + '? Reply with YES or NO.', [{
         pattern: bot.utterances.yes,
         callback: function(response, convo) {
           result.in_for_lunch = true;
