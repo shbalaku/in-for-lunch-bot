@@ -20,10 +20,16 @@ function UpdatePoll(bot, message) {
   var user_id = message.data.personId;
   var input = message.match[1];
   HelperService.ValidateInput(input)
-    .then(async function(group_name){
-      var requestor_name = await CommonService.GetPersonById(user_id);
-      CommonService.PollMember(requestor_name, requestor_name, user_id, group_name, bot);
-      deferred.resolve('Ok, another poll is about to be sent to you.');
+    .then(function(group_name){
+      ValidatePollStarted(group_name, user_id)
+        .then(async function() {
+          var requestor_name = await CommonService.GetPersonById(user_id);
+          CommonService.PollMember(requestor_name, requestor_name, user_id, group_name, bot);
+          deferred.resolve('Ok, another poll is about to be sent to you.');
+        })
+        .catch(function(error) {
+          deferred.reject(error);
+        });
     })
     .catch(function(error) {
       deferred.reject(error);
