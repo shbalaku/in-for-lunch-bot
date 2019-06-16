@@ -223,25 +223,25 @@ async function BuildResultsText(results_obj, group_name) {
   CommonService.IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
 
   // Filtered results arrays
-  var in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
-  var in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
-  var out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
-  var comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
+  const in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
+  const in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
+  const out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
+  const comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
+
+  // Booleans
+  const noone_is_in = results_obj.length == out_of_office_arr.length;
+  const everyone_is_in = results_obj.length == in_for_lunch_arr.length;
 
   // Noone being in statements
-  if (results_obj.length != out_of_office_arr.length) {
-    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f648}\n';
-  } else {
-    text += '\nNo-one is in the office ' + question_day + ' \u{1f63f}\n';
+  if (noone_is_in_for_lunch) {
+    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f63f}\n';
   }
-
   // Everyone being in statements
-  if (results_obj.length == in_for_lunch_arr.length) {
+  if (everyone_is_in) {
     text += '\nEveryone is free for lunch ' + question_day + '!\u{1f603}\n';
   } else if (out_of_office_arr.length == 0) {
     text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
   }
-
   // In for lunch section
   if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
@@ -250,14 +250,14 @@ async function BuildResultsText(results_obj, group_name) {
     });
   }
   // In the office but not in for lunch section
-  if (in_the_office_arr.length != 0) {
+  if (in_the_office_arr.length != 0 && !noone_is_in) {
     text += '\n\u{1f3e2} In The Office But Not Free For Lunch:\n';
     in_the_office_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
   }
   // Out of office section
-  if (out_of_office_arr.length != 0) {
+  if (out_of_office_arr.length != 0 && !noone_is_in) {
     text += '\n\u{1f3d6} Out Of Office:\n';
     out_of_office_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
