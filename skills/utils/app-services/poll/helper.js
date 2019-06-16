@@ -372,6 +372,28 @@ function getPollersInProgress(group_name) {
   });
 }
 
+/* Helper function to get poll timestamp for a group */
+function getPollTimestamp(group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // get pollers who are in progress
+      client.query('SELECT DISTINCT poll_timestamp AS timestamp FROM ' + TABLE_NAME + ' WHERE group_name=$1;',
+        [group_name],
+        function(err, res) {
+          if (err) throw err;
+          client.end(function(err) {
+            if (err) throw err;
+            var date = new Date(res.rows[0].timestamp);
+            resolve(date.toString());
+          });
+        });
+    });
+  });
+}
+
 /* Helper service to write text string of poll results displayed back to user */
 async function BuildResultsText(results_obj, group_name) {
   var text = '';
@@ -423,5 +445,9 @@ async function BuildResultsText(results_obj, group_name) {
   } else {
     text += '\nEveryone has completed the poll today \u{1f4af}\n';
   }
+  // Display poll timestamp
+  var timestamp = await getPollTimestamp(group_name);
+  text += '\nPoll recorded on **' + timestamp + '** \u231b\n';
+
   return text;
 }
