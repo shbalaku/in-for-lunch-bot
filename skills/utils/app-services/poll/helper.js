@@ -88,31 +88,6 @@ function savePollResult(result, member_id, group_name) {
   });
 }
 
-/* Helper function to get poll timestamp for a group */
-function getPollTimestamp(group_name) {
-  return new Promise(resolve => {
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // get pollers who are in progress
-      client.query('SELECT DISTINCT poll_timestamp AS timestamp FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_timestamp IS NOT NULL;',
-        [group_name],
-        function(err, res) {
-          if (err) throw err;
-          client.end(function(err) {
-            if (err) throw err;
-            if (res.rows.length != 0) {
-              resolve(parseInt(res.rows[0].timestamp));
-            } else {
-              resolve(-1);
-            }
-          });
-        });
-    });
-  });
-}
-
 /* Helper function to check if it is after 1 pm */
 function isItAfter2PM() {
   var now = new Date();
@@ -184,7 +159,7 @@ function ValidatePollInput(input, user_id) {
 /* Helper function to check if any polls are in progress in group */
 async function ValidatePoll(group_name) {
   var deferred = Q.defer();
-  var timestamp = await getPollTimestamp(group_name);
+  var timestamp = await CommonService.GetPollTimestamp(group_name);
   if (timestamp != -1) {
     var time_passed = Date.now() - timestamp;
     // Check if time passed is greater than hold time
@@ -451,7 +426,7 @@ async function BuildResultsText(results_obj, group_name) {
     text += '\nEveryone has completed the poll for ' + question_day + ' \u{1f4af}\n';
   }
   // Display poll timestamp
-  timestamp = await getPollTimestamp(group_name);
+  timestamp = await CommonService.GetPollTimestamp(group_name);
   var d = new Date(timestamp);
   d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
   text += '\nPoll recorded on **' + d.toUTCString() + '** \u231b\n';

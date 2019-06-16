@@ -14,6 +14,7 @@ service.GetPrimaryGroupById = GetPrimaryGroupById;
 service.GetMembersByGroupName = GetMembersByGroupName;
 service.ValidateGroup = ValidateGroup;
 service.ValidatePersonInGroup = ValidatePersonInGroup;
+service.GetPollTimestamp = GetPollTimestamp;
 
 module.exports = service;
 
@@ -136,4 +137,29 @@ function ValidatePersonInGroup(user_id, group_name) {
     });
   });
   return deferred.promise;
+}
+
+/* Helper function to get poll timestamp for a group */
+function GetPollTimestamp(group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // get pollers who are in progress
+      client.query('SELECT DISTINCT poll_timestamp AS timestamp FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_timestamp IS NOT NULL;',
+        [group_name],
+        function(err, res) {
+          if (err) throw err;
+          client.end(function(err) {
+            if (err) throw err;
+            if (res.rows.length != 0) {
+              resolve(parseInt(res.rows[0].timestamp));
+            } else {
+              resolve(-1);
+            }
+          });
+        });
+    });
+  });
 }
