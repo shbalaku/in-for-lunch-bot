@@ -6,6 +6,7 @@ module.exports = Controller;
 
 function Controller(controller) {
   controller.hears('help', 'direct_message,direct_mention', function(bot, message) {
+    console.log(message.data);
     var text = "Here are my skills \u{1f60f}";
     text += "\n- **Create lunch group**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "group -name <group_name> -add <cec1> [ <cec2> ... ]") +
