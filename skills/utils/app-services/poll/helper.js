@@ -88,6 +88,66 @@ function savePollResult(result, member_id, group_name) {
   });
 }
 
+/* Helper function to get poll timestamp for a group */
+function getPollTimestamp(group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // get pollers who are in progress
+      client.query('SELECT DISTINCT poll_timestamp AS timestamp FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_timestamp IS NOT NULL;',
+        [group_name],
+        function(err, res) {
+          if (err) throw err;
+          client.end(function(err) {
+            if (err) throw err;
+            if (res.rows.length != 0) {
+              resolve(parseInt(res.rows[0].timestamp));
+            } else {
+              resolve(-1);
+            }
+          });
+        });
+    });
+  });
+}
+
+/* Helper function to check if it is after 1 pm */
+function isItAfter2PM() {
+  var now = new Date();
+  var hour = now.getUTCHours();
+  if (hour >= 14) {
+    return true;
+  }
+  return false;
+}
+
+/* Helper function to get array of pollers in progress for group_name */
+function getPollersInProgress(group_name) {
+  return new Promise(resolve => {
+    var in_progress_pollers = [];
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // get pollers who are in progress
+      client.query('SELECT person_name FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_in_progress=$2;',
+        [group_name, true],
+        function(err, res) {
+          if (err) throw err;
+          client.end(function(err) {
+            if (err) throw err;
+            res.rows.forEach(row => {
+              in_progress_pollers.push(row.person_name);
+            });
+            resolve(in_progress_pollers);
+          });
+        });
+    });
+  });
+}
+
 /* Helper function to sanitise input and check if user is member of group they are polling */
 function ValidatePollInput(input, user_id) {
   var deferred = Q.defer();
@@ -122,40 +182,26 @@ function ValidatePollInput(input, user_id) {
 }
 
 /* Helper function to check if any polls are in progress in group */
-function ValidatePoll(group_name) {
+async function ValidatePoll(group_name) {
   var deferred = Q.defer();
-  // Establish client POSTGRESQL
-  const client = PostgreSQL.CreateClient();
-  client.connect(function(err) {
-    if (err) throw err;
-    // select lunch group entry with user_id and group_name
-    client.query('SELECT DISTINCT poll_timestamp FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_timestamp IS NOT NULL;',
-      [group_name],
-      function(err, res) {
-        if (err) throw err;
-        client.end(async function(err) {
-          if (err) throw err;
-          if (res.rows.length == 0) {
-            await setPollTimestamp(group_name);
-            deferred.resolve('poll request valid');
-          } else {
-            var timestamp = parseInt(res.rows[0].poll_timestamp);
-            var time_passed = Date.now() - timestamp;
-            // Check if time passed is greater than hold time
-            if (time_passed > POLL_HOLD_INTERVAL) {
-              await setPollTimestamp(group_name);
-              deferred.resolve('poll request valid');
-            } else {
-              var d = new Date(timestamp + POLL_HOLD_INTERVAL);
-              d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
-              var error = '\u274c Poll request denied. You must wait until the hold ' +
-                'time expires \u23f3 \n\nHold time expires on: **' + d.toUTCString() + '**';
-              deferred.reject(error);
-            }
-          }
-        });
-      });
-  });
+  var timestamp = await getPollTimestamp(group_name);
+  if (timestamp != -1) {
+    var time_passed = Date.now() - timestamp;
+    // Check if time passed is greater than hold time
+    if (time_passed > POLL_HOLD_INTERVAL) {
+      await setPollTimestamp(group_name);
+      deferred.resolve('poll request valid');
+    } else {
+      var d = new Date(timestamp + POLL_HOLD_INTERVAL);
+      d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
+      var error = '\u274c Poll request denied. You must wait until the hold ' +
+        'time expires \u23f3 \n\nHold time expires on: **' + d.toUTCString() + '**';
+      deferred.reject(error);
+    }
+  } else {
+    await setPollTimestamp(group_name);
+    deferred.resolve('poll request valid');
+  }
   return deferred.promise;
 }
 
@@ -182,16 +228,6 @@ function MembersHaveJoined(group_name) {
       });
   });
   return deferred.promise;
-}
-
-/* Helper function to check if it is after 1 pm */
-function isItAfter2PM() {
-  var now = new Date();
-  var hour = now.getUTCHours();
-  if (hour >= 14) {
-    return true;
-  }
-  return false;
 }
 
 /* Helper function to poll member */
@@ -359,52 +395,6 @@ function GetPollResults(group_name, user_id) {
       });
   });
   return deferred.promise;
-}
-
-/* Helper function to get array of pollers in progress for group_name */
-function getPollersInProgress(group_name) {
-  return new Promise(resolve => {
-    var in_progress_pollers = [];
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // get pollers who are in progress
-      client.query('SELECT person_name FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND poll_in_progress=$2;',
-        [group_name, true],
-        function(err, res) {
-          if (err) throw err;
-          client.end(function(err) {
-            if (err) throw err;
-            res.rows.forEach(row => {
-              in_progress_pollers.push(row.person_name);
-            });
-            resolve(in_progress_pollers);
-          });
-        });
-    });
-  });
-}
-
-/* Helper function to get poll timestamp for a group */
-function getPollTimestamp(group_name) {
-  return new Promise(resolve => {
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // get pollers who are in progress
-      client.query('SELECT DISTINCT poll_timestamp AS timestamp FROM ' + TABLE_NAME + ' WHERE group_name=$1;',
-        [group_name],
-        function(err, res) {
-          if (err) throw err;
-          client.end(function(err) {
-            if (err) throw err;
-            resolve(parseInt(res.rows[0].timestamp));
-          });
-        });
-    });
-  });
 }
 
 /* Helper service to write text string of poll results displayed back to user */
