@@ -411,7 +411,7 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Comments section
   var comments_arr = results_obj.filter(obj => obj.result.comments.length != 0);
-  console.log(out_of_office_arr);
+  console.log(comments_arr);
   if (comments_arr.length != 0) {
     text += '\n\u{1f4ac} Comments:\n';
     comments_arr.forEach(obj => {
@@ -420,6 +420,7 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Members yet to complete poll section
   var in_progress_pollers = await getPollersInProgress(group_name);
+  console.log(in_progress_pollers);
   if (in_progress_pollers.length != 0) {
     text += '\n\u{1f937} Yet to complete poll:\n';
     in_progress_pollers.forEach(poller => {
@@ -428,5 +429,6 @@ async function BuildResultsText(results_obj, group_name) {
   } else {
     text += '\nEveryone has completed the poll today \u{1f4af}\n';
   }
+  console.log(text);
   return text;
 }
