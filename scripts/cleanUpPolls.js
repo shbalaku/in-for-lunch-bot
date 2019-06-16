@@ -37,8 +37,8 @@ function cleanUpPoll(group_name) {
     client.connect(function(err) {
       if (err) throw err;
       // get all group names in table
-      client.query('UPDATE ' + TABLE_NAME + ' SET poll_result=$1, poll_timestamp=$1 WHERE group_name=$2;',
-      [null, group_name], function(err, res) {
+      client.query('UPDATE ' + TABLE_NAME + ' SET poll_result=$1, poll_timestamp=$2 WHERE group_name=$3;',
+      [{}, null, group_name], function(err, res) {
         if (err) throw err;
         client.end(function(err) {
           if (err) throw err;
