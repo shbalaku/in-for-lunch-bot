@@ -377,7 +377,7 @@ async function BuildResultsText(results_obj, group_name) {
   console.log(results_obj);
   var text = '';
   // In for lunch section
-  var in_for_lunch_arr = results_obj.filter(result => results_obj.result.in_for_lunch);
+  var in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
   if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach(obj => {
@@ -387,7 +387,7 @@ async function BuildResultsText(results_obj, group_name) {
     text += '\nNo-one is in for lunch today \u{1f648}\n';
   }
   // In the office but not in for lunch section
-  var in_the_office_arr = results_obj.filter(obj => (obj.result.in_the_office && !results_obj.result.in_for_lunch));
+  var in_the_office_arr = results_obj.filter(obj => (obj.result.in_the_office && !obj.result.in_for_lunch));
   if (in_the_office_arr.length != 0) {
     text += '\n\u{1f3e2} In The Office But Not In For Lunch:\n';
     in_the_office_arr.forEach(obj => {
