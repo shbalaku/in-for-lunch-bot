@@ -20,7 +20,7 @@ function UpdatePoll(bot, message) {
   var user_id = message.data.personId;
   var input = message.match[1];
   HelperService.ValidateInput(input)
-    .then(function(group_name){
+    .then(async function(group_name){
       var requestor_name = await CommonService.GetPersonById(user_id);
       CommonService.PollMember(requestor_name, requestor_name, user_id, group_name, bot);
       deferred.resolve('Ok, another poll is about to be sent to you.');
