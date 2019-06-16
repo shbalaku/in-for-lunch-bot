@@ -17,7 +17,6 @@ var service = {};
 service.ValidatePollInput = ValidatePollInput;
 service.MembersHaveJoined = MembersHaveJoined;
 service.ValidatePoll = ValidatePoll;
-service.PollMember = PollMember;
 service.ValidateResultsInput = ValidateResultsInput;
 service.GetPollResults = GetPollResults;
 service.BuildResultsText = BuildResultsText;
