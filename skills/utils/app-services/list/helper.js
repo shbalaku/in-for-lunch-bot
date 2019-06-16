@@ -25,9 +25,9 @@ function GetGroupsByPersonId(id) {
     // select all groups with member cec
     client.query('SELECT group_name, primary_group FROM ' + TABLE_NAME + ' WHERE person_id=$1;', [id], function(err, res) {
       if (err) throw err;
-      if (res.rows.length != 0) {
-        client.end(function(err) {
-          if (err) throw err;
+      client.end(function(err) {
+        if (err) throw err;
+        if (res.rows.length != 0) {
           var groups = {
             list: [],
             primary_group: res.rows[0].primary_group
@@ -36,13 +36,10 @@ function GetGroupsByPersonId(id) {
             groups.list.push(row.group_name);
           });
           deferred.resolve(groups);
-        });
-      } else {
-        client.end(function(err) {
-          if (err) throw err;
+        } else {
           deferred.reject('You are not part of any lunch group \u{1f9d0}');
-        });
-      }
+        }
+      });
     });
   });
   return deferred.promise;
