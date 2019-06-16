@@ -56,7 +56,8 @@ function ValidateInputSyntax(input) {
   }
   /* Syntax error */
   function syntaxError() {
-    var err = 'Usage: `group <group_name> <cec1> [ <cec2> ... ]`. E.g. `group hogwarts hpotter rweasley`. One or more CECs required (excluding your own).';
+    var err = 'Usage: `group -name <group_name> -add <cec1> [ <cec2> ... ]`.' +
+    ' E.g. `group -name hogwarts -add hpotter rweasley`. One or more CECs required (excluding your own).';
     return err;
   }
   return deferred.promise;
