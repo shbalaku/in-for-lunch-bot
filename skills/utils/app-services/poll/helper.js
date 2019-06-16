@@ -231,7 +231,7 @@ async function PollMember(requestor_name, member, group_name, bot) {
     ], {}, 'default');
 
     // In For Lunch Conversation thread - survey lunch availability
-    convo.addQuestion('Are you available for lunch? Reply with YES or NO.', [{
+    convo.addQuestion('Are you available for lunch today? Reply with YES or NO.', [{
         pattern: bot.utterances.yes,
         callback: function(response, convo) {
           result.in_for_lunch = true;
@@ -383,7 +383,7 @@ async function BuildResultsText(results_obj, group_name) {
       text += '- ' + obj.name + '\n';
     });
   } else {
-    text += '\nNo-one is in for lunch today \u{1f648}\n';
+    text += '\nNo-one is free for lunch today \u{1f648}\n';
   }
   // In the office but not in for lunch section
   var in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
