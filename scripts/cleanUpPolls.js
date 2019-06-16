@@ -6,7 +6,7 @@ const PATH = process.env.PATH;
 const TABLE_NAME = process.env.TABLE_NAME;
 
 /* LOAD CLIENTS/MODULES */
-const PostgreSQL = require(PATH + './skills/utils/postgres');
+const PostgreSQL = require(PATH + '/skills/utils/postgres');
 const CommonService = require(PATH + '/skills/utils/common');
 
 /* Function to get all group names in a list */
