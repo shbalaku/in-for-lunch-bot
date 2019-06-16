@@ -374,11 +374,9 @@ function getPollersInProgress(group_name) {
 
 /* Helper service to write text string of poll results displayed back to user */
 async function BuildResultsText(results_obj, group_name) {
-  console.log(results_obj);
   var text = '';
   // In for lunch section
   var in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
-  console.log(in_for_lunch_arr);
   if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach(obj => {
@@ -389,7 +387,6 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // In the office but not in for lunch section
   var in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
-  console.log(in_the_office_arr);
   if (in_the_office_arr.length != 0) {
     text += '\n\u{1f3e2} In The Office But Not In For Lunch:\n';
     in_the_office_arr.forEach(obj => {
@@ -398,7 +395,6 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Out of office section
   var out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
-  console.log(out_of_office_arr);
   if (results_obj.length == out_of_office_arr.length) {
     text += '\nNo-one is in the office today \u{1f63f}\n';
   } else if (out_of_office_arr.length != 0) {
@@ -411,7 +407,6 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Comments section
   var comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
-  console.log(comments_arr);
   if (comments_arr.length != 0) {
     text += '\n\u{1f4ac} Comments:\n';
     comments_arr.forEach(obj => {
@@ -420,7 +415,6 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Members yet to complete poll section
   var in_progress_pollers = await getPollersInProgress(group_name);
-  console.log(in_progress_pollers);
   if (in_progress_pollers.length != 0) {
     text += '\n\u{1f937} Yet to complete poll:\n';
     in_progress_pollers.forEach(poller => {
@@ -429,6 +423,5 @@ async function BuildResultsText(results_obj, group_name) {
   } else {
     text += '\nEveryone has completed the poll today \u{1f4af}\n';
   }
-  console.log(text);
   return text;
 }
