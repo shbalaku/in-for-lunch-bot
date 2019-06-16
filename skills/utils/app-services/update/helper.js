@@ -3,6 +3,7 @@ const Q = require('q');
 
 /* ENVIRONMENT VARIABLES */
 const PATH = process.env.PATH;
+const TABLE_NAME = process.env.TABLE_NAME;
 
 /* LOAD CLIENTS/MODULES */
 const PostgreSQL = require(PATH + '/skills/utils/postgres');
@@ -57,8 +58,8 @@ function ValidatePollStarted(group_name, user_id) {
   client.connect(function(err) {
     if (err) throw err;
     // get person's poll result
-    client.query('SELECT * FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id=$2 AND poll_result IS NOT NULL AND poll_timestamp IS NOT NULL;',
-      [group_name, user_id],
+    client.query('SELECT * FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id=$2 AND poll_result!=$3 AND poll_timestamp IS NOT NULL;',
+      [group_name, user_id, {}],
       function(err, res) {
         if (err) throw err;
         client.end(function(err) {
