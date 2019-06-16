@@ -233,7 +233,7 @@ async function BuildResultsText(results_obj, group_name) {
   const everyone_is_in = results_obj.length == in_for_lunch_arr.length;
 
   // Noone being in statements
-  if (noone_is_in_for_lunch) {
+  if (noone_is_in) {
     text += '\nNo-one is free for lunch ' + question_day + ' \u{1f63f}\n';
   }
   // Everyone being in statements
