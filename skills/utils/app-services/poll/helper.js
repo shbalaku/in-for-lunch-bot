@@ -386,8 +386,7 @@ function getPollTimestamp(group_name) {
           if (err) throw err;
           client.end(function(err) {
             if (err) throw err;
-            var date = new Date(res.rows[0].timestamp);
-            resolve(date.toString());
+            resolve(res.rows[0].timestamp);
           });
         });
     });
@@ -446,8 +445,9 @@ async function BuildResultsText(results_obj, group_name) {
     text += '\nEveryone has completed the poll today \u{1f4af}\n';
   }
   // Display poll timestamp
-  var timestamp = await getPollTimestamp(group_name);
-  text += '\nPoll recorded on **' + timestamp + '** \u231b\n';
+  timestamp = await getPollTimestamp(group_name);
+  var timestamp_formatted = new Date(parseInt(timestamp));
+  text += '\nPoll recorded on **' + timestamp_formatted + '** \u231b\n';
 
   return text;
 }
