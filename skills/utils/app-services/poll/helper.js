@@ -410,6 +410,8 @@ function getPollTimestamp(group_name) {
 /* Helper service to write text string of poll results displayed back to user */
 async function BuildResultsText(results_obj, group_name) {
   var text = '';
+  var question_day = '';
+  isItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
   // In for lunch section
   var in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
   if (in_for_lunch_arr.length != 0) {
@@ -418,12 +420,12 @@ async function BuildResultsText(results_obj, group_name) {
       text += '- ' + obj.name + '\n';
     });
   } else {
-    text += '\nNo-one is free for lunch today \u{1f648}\n';
+    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f648}\n';
   }
   // In the office but not in for lunch section
   var in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
   if (in_the_office_arr.length != 0) {
-    text += '\n\u{1f3e2} In The Office But Not In For Lunch:\n';
+    text += '\n\u{1f3e2} In The Office But Not Free For Lunch:\n';
     in_the_office_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
@@ -431,14 +433,14 @@ async function BuildResultsText(results_obj, group_name) {
   // Out of office section
   var out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
   if (results_obj.length == out_of_office_arr.length) {
-    text += '\nNo-one is in the office today \u{1f63f}\n';
+    text += '\nNo-one is in the office ' + question_day + ' \u{1f63f}\n';
   } else if (out_of_office_arr.length != 0) {
     text += '\n\u{1f3d6} Out Of Office:\n';
     out_of_office_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
   } else {
-    text += '\nEveryone is in the office today! \u{1f4aa}\n';
+    text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
   }
   // Comments section
   var comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
@@ -456,7 +458,7 @@ async function BuildResultsText(results_obj, group_name) {
       text += '- ' + poller + '\n';
     });
   } else {
-    text += '\nEveryone has completed the poll today \u{1f4af}\n';
+    text += '\nEveryone has completed the poll for ' + question_day + ' \u{1f4af}\n';
   }
   // Display poll timestamp
   timestamp = await getPollTimestamp(group_name);
