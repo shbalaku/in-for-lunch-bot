@@ -169,8 +169,8 @@ function ValidatePersonInGroup(user_id, group_name) {
   client.connect(function(err) {
     if (err) throw err;
     // select lunch group entry with user_id and group_name
-    client.query('SELECT * FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id=$2 AND status=$3;',
-    [group_name, user_id, 'accepted'], function(err, res) {
+    client.query('SELECT * FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id=$2;',
+    [group_name, user_id], function(err, res) {
       if (err) throw err;
       client.end(function(err) {
         if (err) throw err;
