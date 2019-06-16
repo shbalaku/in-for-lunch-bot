@@ -146,9 +146,10 @@ function ValidatePoll(group_name) {
               await setPollTimestamp(group_name);
               deferred.resolve('poll request valid');
             } else {
-              var hold_exp = new Date(timestamp + POLL_HOLD_INTERVAL);
+              var d = new Date(timestamp + POLL_HOLD_INTERVAL);
+              d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
               var error = '\u274c Poll request denied. You must wait until the hold ' +
-                'time expires \u23f3 \n\nHold time expires on: **' + hold_exp.toLocaleString() + '**';
+                'time expires \u23f3 \n\nHold time expires on: **' + d.toUTCString() + '**';
               deferred.reject(error);
             }
           }
@@ -446,8 +447,9 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Display poll timestamp
   timestamp = await getPollTimestamp(group_name);
-  var timestamp_formatted = new Date(timestamp);
-  text += '\nPoll recorded on **' + timestamp_formatted.toLocaleString() + '** \u231b\n';
+  var d = new Date(timestamp);
+  d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
+  text += '\nPoll recorded on **' + d.toUTCString() + '** \u231b\n';
 
   return text;
 }
