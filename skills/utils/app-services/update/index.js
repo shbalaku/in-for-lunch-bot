@@ -21,7 +21,7 @@ function UpdatePoll(bot, message) {
   var input = message.match[1];
   HelperService.ValidateInput(input)
     .then(function(group_name){
-      ValidatePollStarted(group_name, user_id)
+      HelperService.ValidatePollStarted(group_name, user_id)
         .then(async function() {
           var requestor_name = await CommonService.GetPersonById(user_id);
           CommonService.PollMember(requestor_name, requestor_name, user_id, group_name, bot);
