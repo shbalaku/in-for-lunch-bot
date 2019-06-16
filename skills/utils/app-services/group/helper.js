@@ -27,7 +27,7 @@ function ValidateInputSyntax(input) {
   var resp = {};
   var input_arr = input.trim().replace(/[^\x00-\x7F]/g, "").split(' ');
   if (input_arr.length < 2) { // testing value = 1, prod value = 2
-    var err = 'Usage: `group <group_name> <cec1> <cec2>`. E.g. `group hogwarts hpotter rweasley`. One or more CECs required (excluding your own).';
+    var err = 'Usage: `group <group_name> <cec1> [ <cec2> ... ]`. E.g. `group hogwarts hpotter rweasley`. One or more CECs required (excluding your own).';
     deferred.reject(err);
   } else {
     resp.group_name = input_arr[0].toUpperCase();

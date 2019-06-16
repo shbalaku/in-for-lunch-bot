@@ -8,7 +8,7 @@ function Controller(controller) {
   controller.hears('help', 'direct_message,direct_mention', function(bot, message) {
     var text = "Here are my skills \u{1f60f}";
     text += "\n- **Create lunch group**" + "\n" + "    * " +
-      "Usage: " + bot.appendMention(message, "group <group_name> <cec1> <cec2> ...") +
+      "Usage: " + bot.appendMention(message, "group <group_name> <cec1> [ <cec2> ... ]") +
       " E.g. group hogwarts hpotter rweasley. One or more valid CECs required (excluding your own).";
     text += "\n- **List lunch groups**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "list");
