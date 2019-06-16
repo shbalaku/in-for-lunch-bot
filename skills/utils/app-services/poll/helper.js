@@ -378,6 +378,7 @@ async function BuildResultsText(results_obj, group_name) {
   var text = '';
   // In for lunch section
   var in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
+  console.log(in_for_lunch_arr);
   if (in_for_lunch_arr.length != 0) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach(obj => {
@@ -388,6 +389,7 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // In the office but not in for lunch section
   var in_the_office_arr = results_obj.filter(obj => (obj.result.in_the_office && !obj.result.in_for_lunch));
+  console.log(in_the_office_arr);
   if (in_the_office_arr.length != 0) {
     text += '\n\u{1f3e2} In The Office But Not In For Lunch:\n';
     in_the_office_arr.forEach(obj => {
@@ -396,6 +398,7 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Out of office section
   var out_of_office_arr = results_obj.filter(obj => !obj.result.in_the_office);
+  console.log(out_of_office_arr);
   if (results_obj.length == out_of_office_arr.length) {
     text += '\nNo-one is in the office today \u{1f63f}\n';
   } else if (out_of_office_arr.length != 0) {
@@ -407,7 +410,8 @@ async function BuildResultsText(results_obj, group_name) {
     text += '\nEveryone is in the office today! \u{1f4aa}\n';
   }
   // Comments section
-  var comments_arr = results_obj.filter(obj => obj.poll_result.comments.length != 0);
+  var comments_arr = results_obj.filter(obj => obj.result.comments.length != 0);
+  console.log(out_of_office_arr);
   if (comments_arr.length != 0) {
     text += '\n\u{1f4ac} Comments:\n';
     comments_arr.forEach(obj => {
