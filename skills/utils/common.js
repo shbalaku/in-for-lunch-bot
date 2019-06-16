@@ -210,7 +210,7 @@ function GetPollTimestamp(group_name) {
   });
 }
 
-/* Helper function to check if it is after 1 pm */
+/* Helper function to check if it is after 2 pm */
 function IsItAfter2PM() {
   var now = new Date();
   var hour = now.getUTCHours();
