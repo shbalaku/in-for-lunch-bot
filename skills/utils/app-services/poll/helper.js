@@ -149,7 +149,7 @@ function ValidatePoll(group_name) {
               var d = new Date(timestamp + POLL_HOLD_INTERVAL);
               d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
               var error = '\u274c Poll request denied. You must wait until the hold ' +
-                'time expires \u23f3 \n\nHold time expires on: **' + d.toUTCString() + '**';
+                'time expires \u23f3 \n\nHold time expires on: **' + d.toString() + '**';
               deferred.reject(error);
             }
           }
@@ -449,7 +449,7 @@ async function BuildResultsText(results_obj, group_name) {
   timestamp = await getPollTimestamp(group_name);
   var d = new Date(timestamp);
   d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
-  text += '\nPoll recorded on **' + d.toUTCString() + '** \u231b\n';
+  text += '\nPoll recorded on **' + d.toString() + '** \u231b\n';
 
   return text;
 }
