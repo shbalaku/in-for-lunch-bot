@@ -15,6 +15,7 @@ const CommonService = require(PATH + '/skills/utils/common');
 var service = {};
 
 service.ValidatePollInput = ValidatePollInput;
+service.MembersHaveJoined = MembersHaveJoined;
 service.ValidatePoll = ValidatePoll;
 service.PollMember = PollMember;
 service.ValidateResultsInput = ValidateResultsInput;
@@ -80,13 +81,44 @@ function savePollResult(result, member_id, group_name) {
           if (err) throw err;
           client.end(async function(err) {
             if (err) throw err;
-            // var finished = await hasPollFinished(group_name);
-            // if (finished) await setPollStartedFlag(group_name, false);
             resolve('saved');
           });
         });
     });
   });
+}
+
+/* Helper function to sanitise input and check if user is member of group they are polling */
+function ValidatePollInput(input, user_id) {
+  var deferred = Q.defer();
+  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
+  if (group_name.length == 0) {
+    // set group_name as primary group for user
+    CommonService.GetPrimaryGroupById(user_id)
+      .then(function(primary_group) {
+        deferred.resolve(primary_group);
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
+  } else {
+    // Validate group
+    CommonService.ValidateGroup(group_name)
+      .then(function() {
+        // Validate requestor
+        CommonService.ValidatePersonInGroup(user_id, group_name)
+          .then(function() {
+            deferred.resolve(group_name);
+          })
+          .catch(function(error) {
+            deferred.reject(error);
+          });
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
+  }
+  return deferred.promise;
 }
 
 /* Helper function to check if any polls are in progress in group */
@@ -126,36 +158,28 @@ function ValidatePoll(group_name) {
   return deferred.promise;
 }
 
-/* Helper function to sanitise input and check if user is member of group they are polling */
-function ValidatePollInput(input, user_id) {
+/* Helper function to check whether all members have joined before starting a poll */
+function MembersHaveJoined(group_name) {
   var deferred = Q.defer();
-  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
-  if (group_name.length == 0) {
-    // set group_name as primary group for user
-    CommonService.GetPrimaryGroupById(user_id)
-      .then(function(primary_group) {
-        deferred.resolve(primary_group);
-      })
-      .catch(function(error) {
-        deferred.reject(error);
+  // Establish client POSTGRESQL
+  const client = PostgreSQL.CreateClient();
+  client.connect(function(err) {
+    if (err) throw err;
+    // select persons as member of group and their member status
+    client.query('SELECT status FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND status=$2;',
+      [group_name, 'pending'],
+      function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          if (res.rows.length > 0) {
+            deferred.reject('Everyone in the group must join before starting a poll.');
+          } else {
+            deferred.resolve('everyone has joined the group');
+          }
+        });
       });
-  } else {
-    // Validate group
-    CommonService.ValidateGroup(group_name)
-      .then(function() {
-        // Validate requestor
-        CommonService.ValidatePersonInGroup(user_id, group_name)
-          .then(function() {
-            deferred.resolve(group_name);
-          })
-          .catch(function(error) {
-            deferred.reject(error);
-          });
-      })
-      .catch(function(error) {
-        deferred.reject(error);
-      });
-  }
+  });
   return deferred.promise;
 }
 

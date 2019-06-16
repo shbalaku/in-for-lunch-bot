@@ -78,23 +78,13 @@ function GetMembersByGroupName(group_name) {
   client.connect(function(err) {
     if (err) throw err;
     // select persons as member of group and their member status
-    client.query('SELECT person_id, person_name, status FROM ' + TABLE_NAME + ' WHERE group_name=$1;',
+    client.query('SELECT person_id AS id, person_name AS name FROM ' + TABLE_NAME + ' WHERE group_name=$1;',
       [group_name],
       function(err, res) {
         if (err) throw err;
         client.end(function(err) {
           if (err) throw err;
-          var members = [];
-          var rows = res.rows;
-          rows.forEach(row => {
-            members.push({
-              id: row.person_id,
-              name: row.person_name
-            });
-            if (row.status == 'pending') {
-              deferred.reject('Everyone in the group must join before you start a poll.');
-            }
-          });
+          var members = res.rows;
           deferred.resolve(members);
         });
       });
