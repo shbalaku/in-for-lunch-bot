@@ -21,6 +21,9 @@ function Controller(controller) {
     text += "\n- **Display poll results from your lunch group**" + "\n" + "    * " +
       "Usage: " + bot.appendMention(message, "results [<group_name>]") +
       " E.g. results hogwarts. If group name is omitted, results for your preferred lunch group will be shown.";
+    text += "\n- **Update poll response for a lunch group**" + "\n" + "    * " +
+      "Usage: " + bot.appendMention(message, "update [<group_name>]") +
+      " E.g. update hogwarts. If group name is omitted, you will be sent an update poll for your preferred lunch group.";
     text += "\n\nHelp will always be given at Hogwarts to those who deserve it \u{1f9d9}";
     bot.reply(message, text);
   });
