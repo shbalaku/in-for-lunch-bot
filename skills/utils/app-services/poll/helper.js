@@ -45,59 +45,6 @@ function setPollTimestamp(group_name) {
   });
 }
 
-/* Helper function to set poll started flag forlunch group for locking polls */
-function setPollInProgress(member_id, group_name, flag) {
-  return new Promise(resolve => {
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // update poll result columns in table
-      client.query('UPDATE ' + TABLE_NAME + ' SET poll_in_progress=$1 WHERE group_name=$2 AND person_id=$3;',
-        [flag, group_name, member_id],
-        function(err, res) {
-          if (err) throw err;
-          client.end(function(err) {
-            if (err) throw err;
-            resolve('poll in progress flag set');
-          });
-        });
-    });
-  });
-}
-
-/* Helper function to save poll result to PostgreSQL */
-function savePollResult(result, member_id, group_name) {
-  return new Promise(async (resolve) => {
-    await setPollInProgress(member_id, group_name, false);
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // update poll result columns in table
-      client.query('UPDATE ' + TABLE_NAME + ' SET poll_result[1]=$1 WHERE person_id=$2 AND group_name=$3;',
-        [result, member_id, group_name],
-        function(err, res) {
-          if (err) throw err;
-          client.end(async function(err) {
-            if (err) throw err;
-            resolve('saved');
-          });
-        });
-    });
-  });
-}
-
-/* Helper function to check if it is after 1 pm */
-function isItAfter2PM() {
-  var now = new Date();
-  var hour = now.getUTCHours();
-  if (hour >= 14) {
-    return true;
-  }
-  return false;
-}
-
 /* Helper function to get array of pollers in progress for group_name */
 function getPollersInProgress(group_name) {
   return new Promise(resolve => {
@@ -205,111 +152,6 @@ function MembersHaveJoined(group_name) {
   return deferred.promise;
 }
 
-/* Helper function to poll member */
-async function PollMember(requestor_name, member, group_name, bot) {
-  // Set poll in progress flag for member of group
-  await setPollInProgress(member.id, group_name, true);
-  // Control flow for time of day
-  var question_day = '';
-  isItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
-  // Start Conversation with Poll Questions
-  bot.startPrivateConversationWithPersonId(member.id, function(err, convo) {
-    if (err) throw err;
-
-    // Initialise poll result object
-    var result = {
-      in_the_office: false,
-      in_for_lunch: false,
-      comments: ''
-    };
-
-    // Initial message
-    if (member.name != requestor_name) {
-      convo.sayFirst(requestor_name + ' started a poll for the ' + group_name + ' lunch group!');
-    }
-
-    // In The Office Conversation thread - survey presence in office
-    convo.addQuestion('Are you in the office ' + question_day + '? Reply with YES or NO.', [{
-        pattern: bot.utterances.yes,
-        callback: function(response, convo) {
-          result.in_the_office = true;
-          convo.gotoThread('in_for_lunch');
-          convo.next();
-        }
-      },
-      {
-        pattern: bot.utterances.no,
-        callback: function(response, convo) {
-          result.in_the_office = false;
-          convo.gotoThread('comments');
-          convo.next();
-        }
-      },
-      {
-        default: true,
-        callback: function(response, convo) {
-          // just repeat the question
-          convo.gotoThread('default');
-          convo.next();
-        }
-      }
-    ], {}, 'default');
-
-    // In For Lunch Conversation thread - survey lunch availability
-    convo.addQuestion('Are you available for lunch ' + question_day + '? Reply with YES or NO.', [{
-        pattern: bot.utterances.yes,
-        callback: function(response, convo) {
-          result.in_for_lunch = true;
-          convo.gotoThread('comments');
-          convo.next();
-        }
-      },
-      {
-        pattern: bot.utterances.no,
-        callback: function(response, convo) {
-          result.in_for_lunch = false;
-          convo.gotoThread('comments');
-          convo.next();
-        }
-      },
-      {
-        default: true,
-        callback: function(response, convo) {
-          // just repeat the question
-          convo.gotoThread('in_for_lunch');
-          convo.next();
-        }
-      }
-    ], {}, 'in_for_lunch');
-
-    // Comments Conversation Thread for leaving additional messages
-    convo.addQuestion('If you wish to leave a message, please type it here (80 character limit). Otherwise say NO.', [{
-        pattern: bot.utterances.no,
-        callback: async function(response, convo) {
-          await savePollResult(result, member.id, group_name);
-          convo.say('Thank you for your response! Poll has ended.');
-          convo.next('stop');
-        }
-      },
-      {
-        default: true,
-        callback: async function(response, convo) {
-          // if exceeds char limit just repeat the question
-          if (response.text.length > 80) {
-            convo.gotoThread('comments');
-            convo.next();
-          } else {
-            result.comments = response.text;
-            await savePollResult(result, member.id, group_name);
-            convo.say('Thank you for your response! Poll has ended.');
-            convo.next('stop');
-          }
-        }
-      }
-    ], {}, 'comments');
-  });
-}
-
 /* Helper function to sanitise input for results command and check if user is member of group */
 function ValidateResultsInput(input, user_id) {
   var deferred = Q.defer();
@@ -376,7 +218,7 @@ function GetPollResults(group_name, user_id) {
 async function BuildResultsText(results_obj, group_name) {
   var text = '';
   var question_day = '';
-  isItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
+  CommonService.IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
   // In for lunch section
   var in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
   if (in_for_lunch_arr.length != 0) {
