@@ -20,9 +20,11 @@ function ValidateInput(input, user_id) {
   var deferred = Q.defer();
   var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
   if (group_name.length == 0) {
+    console.log('VALIDATE UPDATE POLL INPUT. GROUP NAME IS ABSENT');
     // set group_name as primary group for user
     CommonService.GetPrimaryGroupById(user_id)
       .then(function(primary_group) {
+        console.log(primary_group);
         deferred.resolve(primary_group);
       })
       .catch(function(error) {
