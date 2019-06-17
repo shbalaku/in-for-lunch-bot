@@ -24,36 +24,25 @@ function PollGroup(bot, message) {
     .then(async function(group_name) {
       // Validate whether all members have joined the group before starting the poll
       HelperService.MembersHaveJoined(group_name)
-        .then(async function() {
-          var requestor_name = await CommonService.GetPersonById(user_id);
-          CommonService.GetMembersByGroupName(group_name)
-            .then(function(members) {
-              members.forEach((member) => {
-                CommonService.PollMember(requestor_name, member.name, member.id, group_name, bot);
-              });
-              deferred.resolve('Poll started.');
+        .then(function() {
+          // Validate whether poll can be conducted
+          HelperService.ValidatePoll(group_name)
+            .then(async function() {
+              var requestor_name = await CommonService.GetPersonById(user_id);
+              CommonService.GetMembersByGroupName(group_name)
+                .then(function(members) {
+                  members.forEach((member) => {
+                    CommonService.PollMember(requestor_name, member.name, member.id, group_name, bot);
+                  });
+                  deferred.resolve('Poll started.');
+                })
+                .catch(function(error) {
+                  deferred.reject(error);
+                });
             })
             .catch(function(error) {
               deferred.reject(error);
             });
-          // // Validate whether poll can be conducted
-          // HelperService.ValidatePoll(group_name)
-          //   .then(async function() {
-          //     var requestor_name = await CommonService.GetPersonById(user_id);
-          //     CommonService.GetMembersByGroupName(group_name)
-          //       .then(function(members) {
-          //         members.forEach((member) => {
-          //           CommonService.PollMember(requestor_name, member.name, member.id, group_name, bot);
-          //         });
-          //         deferred.resolve('Poll started.');
-          //       })
-          //       .catch(function(error) {
-          //         deferred.reject(error);
-          //       });
-          //   })
-          //   .catch(function(error) {
-          //     deferred.reject(error);
-          //   });
         })
         .catch(function(error) {
           deferred.reject(error);

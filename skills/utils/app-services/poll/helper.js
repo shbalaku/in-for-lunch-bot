@@ -5,9 +5,6 @@ const Q = require('q');
 const PATH = process.env.PATH;
 const TABLE_NAME = process.env.TABLE_NAME;
 
-// CONSTANTS
-const POLL_HOLD_INTERVAL = 1000 * 60 * 60 * 12;
-
 /* LOAD CLIENTS/MODULES */
 const PostgreSQL = require(PATH + '/skills/utils/postgres');
 const CommonService = require(PATH + '/skills/utils/common');
@@ -105,20 +102,11 @@ function ValidatePollInput(input, user_id) {
 /* Helper function to check if any polls are in progress in group */
 async function ValidatePoll(group_name) {
   var deferred = Q.defer();
-  var timestamp = await CommonService.GetPollTimestamp(group_name);
-  if (timestamp != -1) {
-    var time_passed = Date.now() - timestamp;
-    // Check if time passed is greater than hold time
-    if (time_passed > POLL_HOLD_INTERVAL) {
-      await setPollTimestamp(group_name);
-      deferred.resolve('poll request valid');
-    } else {
-      var d = new Date(timestamp + POLL_HOLD_INTERVAL);
-      d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
-      var error = '\u274c Poll request denied. You must wait until the hold ' +
-        'time expires \u23f3 \n\nHold time expires on: **' + d.toUTCString() + '**';
-      deferred.reject(error);
-    }
+  in_progress_pollers = await getPollersInProgress(group_name);
+  if (in_progress_pollers.length > 0) {
+    var error = '\u274c Poll request denied. A poll is currently in progress. ' +
+      'Please wait until it has finished to start a new poll \u23f3';
+    deferred.reject(error);
   } else {
     await setPollTimestamp(group_name);
     deferred.resolve('poll request valid');

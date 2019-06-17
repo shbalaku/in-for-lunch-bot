@@ -56,7 +56,7 @@ function main() {
     timestamp = await CommonService.GetPollTimestamp(group.name);
     if (timestamp != -1) {
       var time_passed = Date.now() - timestamp;
-      if (time_passed > 1000 * 60 * 60 * 24) {
+      if (time_passed > 1000 * 60 * 60 * 12) {
         await cleanUpPoll(group.name);
       }
     }
