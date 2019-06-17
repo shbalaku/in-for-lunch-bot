@@ -273,7 +273,7 @@ async function BuildResultsText(results_obj, group_name) {
   }
   // Display poll timestamp
   timestamp = await CommonService.GetPollTimestamp(group_name);
-  var d = new Date(timestamp);
+  var d = new Date(timestamp + 1000 * 60 * 60);
   d.setTime( d.getTime() - new Date().getTimezoneOffset()*60*1000 );
   text += '\nPoll recorded on **' + d.toUTCString() + '** \u231b\n';
 
