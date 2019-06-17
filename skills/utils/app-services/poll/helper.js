@@ -223,6 +223,7 @@ async function BuildResultsText(results_obj, group_name) {
   CommonService.IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
 
   // Filtered results arrays
+  console.log(results_obj);
   const in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
   const in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
   const out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
