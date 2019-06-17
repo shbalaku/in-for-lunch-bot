@@ -42,7 +42,7 @@ function ValidateInputSyntax(input) {
     var groupArr = splitInputArr.slice(nameFlagIdx + 1, addFlagIdx);
     var cecArr = splitInputArr.slice(addFlagIdx + 1, splitInputArr.length);
     //check a group name is given
-    if (groupArr.length > 0 && cecArr.length > -1) { //testing value = -1 prod value = 0
+    if (groupArr.length > 0 && cecArr.length > 0) { //testing value = -1 prod value = 0
       resp.group_name = groupArr.join(" ").toUpperCase();
       resp.cecs = cecArr;
       deferred.resolve(resp);
@@ -92,7 +92,7 @@ async function ValidateCECs(cecs, admin_id) {
   };
   valid_members.push(admin);
   // Validation
-  if (valid_members.length < 1) { // testing value = 1, prod value = 2
+  if (valid_members.length < 2) { // testing value = 1, prod value = 2
     var err = '\u274c One or more valid CECs are required (excluding your own). Please check your inputs and try again.';
     deferred.reject(err);
   } else {
