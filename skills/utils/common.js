@@ -15,7 +15,7 @@ service.GetMembersByGroupName = GetMembersByGroupName;
 service.ValidateGroup = ValidateGroup;
 service.ValidatePersonInGroup = ValidatePersonInGroup;
 service.GetPollTimestamp = GetPollTimestamp;
-service.IsItAfter2PM = IsItAfter2PM;
+service.IsItAfter12PM = IsItAfter12PM;
 service.PollMember = PollMember;
 
 module.exports = service;
@@ -210,11 +210,12 @@ function GetPollTimestamp(group_name) {
   });
 }
 
-/* Helper function to check if it is after 2 pm */
-function IsItAfter2PM() {
+/* Helper function to check if it is after 12 pm London Time */
+function IsItAfter12PM() {
   var now = new Date();
+  now = new Date(now.getTime() + 1000 * 60 * 60);
   var hour = now.getUTCHours();
-  if (hour >= 14) {
+  if (hour >= 12) {
     return true;
   }
   return false;
@@ -226,7 +227,7 @@ async function PollMember(requestor_name, member_name, member_id, group_name, bo
   await setPollInProgress(member_id, group_name, true);
   // Control flow for time of day
   var question_day = '';
-  IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
+  IsItAfter12PM() ? question_day = 'tomorrow' : question_day = 'today';
   // Start Conversation with Poll Questions
   bot.startPrivateConversationWithPersonId(member_id, function(err, convo) {
     if (err) throw err;

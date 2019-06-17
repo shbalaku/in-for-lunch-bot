@@ -99,18 +99,56 @@ function ValidatePollInput(input, user_id) {
   return deferred.promise;
 }
 
+/**/
+function areTimesValidForPoll(timestamp) {
+  var deferred = Q.defer();
+  var now = new Date();
+  now = new Date(now.getTime() + 1000 * 60 * 60);
+  // Reject poll on Friday afternoon, Saturday or on a Sunday Morning
+  var day = now.getUTCDay();
+  var hour = now.getUTCHours();
+  var reject = (day == 5 && hour >= 12) || (day == 6) || (day == 7 && hour <= 12);
+  if (reject) {
+    var err = '\u274c Polls are not allowed to be conducted on Friday afternoons, Saturdays and Sunday Mornings.' +
+      ' Please try again either on Sunday afternoon or Monday morning.';
+    deferred.reject(err);
+  } else {
+    // Reject poll if already conducted in the afternoon. Advise to try again in the morning
+    var d = new Date(timestamp + 1000 * 60 * 60);
+    hour = d.getUTCHours();
+    reject = (hour >= 12) || (hour <= 5);
+    if (reject) {
+      var err = '\u274c Poll has already been conducted for the afternoon. Please wait until ' +
+        '6 AM tomorrow morning to start a new poll.';
+      deferred.reject(err);
+    } else {
+      deferred.resolve('poll valid');
+    }
+  }
+  return deferred.promise;
+}
+
 /* Helper function to check if any polls are in progress in group */
 async function ValidatePoll(group_name) {
   var deferred = Q.defer();
-  in_progress_pollers = await getPollersInProgress(group_name);
-  if (in_progress_pollers.length > 0) {
-    var error = '\u274c Poll request denied. A poll is currently in progress. ' +
-      'Please wait until it has finished to start a new poll \u23f3';
-    deferred.reject(error);
-  } else {
-    await setPollTimestamp(group_name);
-    deferred.resolve('poll request valid');
-  }
+  timestamp = await CommonService.GetPollTimestamp(group_name);
+  // Check if time is valid to conduct poll
+  areTimesValidForPoll(timestamp)
+    .then(function() {
+      // Validate whether a poll is in progress or not
+      in_progress_pollers = await getPollersInProgress(group_name);
+      if (in_progress_pollers.length > 0) {
+        var error = '\u274c Poll request denied. A poll is currently in progress. ' +
+          'Please wait until it has finished to start a new poll \u23f3';
+        deferred.reject(error);
+      } else {
+        await setPollTimestamp(group_name);
+        deferred.resolve('poll request valid');
+      }
+    })
+    .catch(function(error) {
+      deferred.reject(error);
+    });
   return deferred.promise;
 }
 
@@ -208,7 +246,7 @@ async function BuildResultsText(results_obj, group_name) {
   var question_day = '';
 
   // Determine which day is in question for the poll
-  CommonService.IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
+  CommonService.IsItAfter12PM() ? question_day = 'tomorrow' : question_day = 'today';
 
   // Members yet to complete poll section
   var in_progress_pollers = await getPollersInProgress(group_name);
