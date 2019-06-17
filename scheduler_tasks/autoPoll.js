@@ -1,4 +1,4 @@
-// Clean up polls older than 1 day
+// Automatically send polls to group members at a specific schedule
 const Q = require('q');
 
 /* ENVIRONMENT VARIABLES */
@@ -29,38 +29,31 @@ function getAllGroupNames() {
   });
 }
 
-/* Clean up poll variables for a group */
-function cleanUpPoll(group_name) {
+/**/
+function pollGroup(group_name, bot) {
   return new Promise(resolve => {
-    // Establish client POSTGRESQL
-    const client = PostgreSQL.CreateClient();
-    client.connect(function(err) {
-      if (err) throw err;
-      // get all group names in table
-      client.query('UPDATE ' + TABLE_NAME + ' SET poll_result=$1, poll_timestamp=$2 WHERE group_name=$3;',
-      [{}, null, group_name], function(err, res) {
-        if (err) throw err;
-        client.end(function(err) {
-          if (err) throw err;
-          resolve('cleaned poll');
+    var requestor_name = 'AutoPoller';
+    CommonService.GetMembersByGroupName(group_name)
+      .then(function(members) {
+        members.forEach((member) => {
+          CommonService.PollMember(requestor_name, member.name, member.id, group_name, bot);
         });
+        resolve('Poll started');
+      })
+      .catch(function(error) {
+        resolve(error);
       });
-    });
   });
 }
 
 // Main function
-function main() {
+function main(bot) {
   var groups = await getAllGroupNames();
-  groups.forEach( async (group) => {
-    timestamp = await CommonService.GetPollTimestamp(group.name);
-    if (timestamp != -1) {
-      var time_passed = Date.now() - timestamp;
-      if (time_passed > 1000 * 60 * 60 * 24) {
-        await cleanUpPoll(group.name);
-      }
+  groups.forEach(group => {
+    if (group.name == 'TEST') {
+      await pollGroup(group.name, bot);
     }
   });
 }
 
-main();
+main(bot);
