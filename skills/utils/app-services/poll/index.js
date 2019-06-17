@@ -24,7 +24,7 @@ function PollGroup(bot, message) {
     .then(async function(group_name) {
       // Validate whether all members have joined the group before starting the poll
       HelperService.MembersHaveJoined(group_name)
-        .then(function() {
+        .then(async function() {
           var requestor_name = await CommonService.GetPersonById(user_id);
           CommonService.GetMembersByGroupName(group_name)
             .then(function(members) {
