@@ -47,9 +47,9 @@ function pollGroup(group_name, bot) {
 }
 
 // Main function
-function main(bot) {
+async function main(bot) {
   var groups = await getAllGroupNames();
-  groups.forEach(group => {
+  groups.forEach(async (group) => {
     if (group.name == 'TEST') {
       await pollGroup(group.name, bot);
     }
