@@ -105,19 +105,20 @@ function areTimesValidForPoll(timestamp) {
   var now = new Date();
   now = new Date(now.getTime() + 1000 * 60 * 60);
   // Reject poll on Friday afternoon, Saturday or on a Sunday Morning
-  var day = now.getUTCDay();
-  var hour = now.getUTCHours();
-  var reject = (day == 5 && hour >= 12) || (day == 6) || (day == 7 && hour <= 12);
-  if (reject) {
+  var day_now = now.getUTCDay();
+  var hour_now = now.getUTCHours();
+  var reject_weekend = (day_now == 5 && hour_now >= 12) || (day_now == 6) || (day_now == 7 && hour_now <= 12);
+  if (reject_weekend) {
     var err = '\u274c Polls are not allowed to be conducted on Friday afternoons, Saturdays and Sunday Mornings.' +
       ' Please try again either on Sunday afternoon or Monday morning.';
     deferred.reject(err);
   } else {
     // Reject poll if already conducted in the afternoon. Advise to try again in the morning
     var d = new Date(timestamp + 1000 * 60 * 60);
-    hour = d.getUTCHours();
-    reject = (hour >= 12) || (hour <= 5);
-    if (reject) {
+    var d_day = d.getUTCDay();
+    var d_hour = d.getUTCHours();
+    var reject_repetiton = (d_hour >= 12) || (d_hour <= 5) && (d_day == day_now);
+    if (reject_repetiton) {
       var err = '\u274c Poll has already been conducted for the afternoon. Please wait until ' +
         '6 AM tomorrow morning to start a new poll.';
       deferred.reject(err);
