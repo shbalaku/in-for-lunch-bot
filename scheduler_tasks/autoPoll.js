@@ -73,7 +73,7 @@ var controller = Botkit.webexbot({
   public_address: public_url,
   access_token: process.env.ACCESS_TOKEN,
   secret: process.env.SECRET, // this is a RECOMMENDED security setting that checks of incoming payloads originate from Cisco Webex Teams
-  webhook_name: process.env.WEBHOOK_NAME || ('built with BotKit (' + env + ')')
+  webhook_name: 'built with Botkit'
 });
 
 const bot = controller.spawn({});
