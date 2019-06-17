@@ -222,11 +222,20 @@ async function BuildResultsText(results_obj, group_name) {
   // Determine which day is in question for the poll
   CommonService.IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
 
+  // Members yet to complete poll section
+  var in_progress_pollers = await getPollersInProgress(group_name);
+  if (in_progress_pollers.length != 0) {
+    text += '\n\u{1f937} Yet to complete poll:\n';
+    in_progress_pollers.forEach(poller => {
+      text += '- ' + poller + '\n';
+    });
+  }
+
   // Filtered results arrays
-  const in_for_lunch_arr = results_obj.filter(obj => obj.result[0].in_for_lunch);
-  const in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
-  const out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
-  const comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
+  const in_for_lunch_arr = results_obj.filter(obj => (obj.result[0].in_for_lunch && !in_progress_pollers.includes(obj.name)));
+  const in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch !in_progress_pollers.includes(obj.name)));
+  const out_of_office_arr = results_obj.filter(obj => (!obj.result[0].in_the_office && !in_progress_pollers.includes(obj.name)));
+  const comments_arr = results_obj.filter(obj => (obj.result[0].comments.length != 0 && !in_progress_pollers.includes(obj.name)));
 
   // Booleans
   const noone_is_in = results_obj.length == out_of_office_arr.length;
@@ -270,14 +279,9 @@ async function BuildResultsText(results_obj, group_name) {
       text += '- ' + obj.name + ' says: ' + obj.result[0].comments + '\n';
     });
   }
-  // Members yet to complete poll section
+  // Everyone completed poll section
   var in_progress_pollers = await getPollersInProgress(group_name);
-  if (in_progress_pollers.length != 0) {
-    text += '\n\u{1f937} Yet to complete poll:\n';
-    in_progress_pollers.forEach(poller => {
-      text += '- ' + poller + '\n';
-    });
-  } else {
+  if (in_progress_pollers.length == 0) {
     text += '\nEveryone has completed the poll for ' + question_day + ' \u{1f4af}\n';
   }
   // Display poll timestamp
