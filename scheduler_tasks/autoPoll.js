@@ -39,7 +39,6 @@ function pollGroup(group_name, bot) {
         members.forEach((member) => {
           CommonService.PollMember(requestor_name, member.name, member.id, group_name, bot);
         });
-        resolve('Poll started');
       })
       .catch(function(error) {
         resolve(error);
