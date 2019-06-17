@@ -233,7 +233,7 @@ async function BuildResultsText(results_obj, group_name) {
 
   // Filtered results arrays
   const in_for_lunch_arr = results_obj.filter(obj => (obj.result[0].in_for_lunch && !in_progress_pollers.includes(obj.name)));
-  const in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch !in_progress_pollers.includes(obj.name)));
+  const in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch && !in_progress_pollers.includes(obj.name)));
   const out_of_office_arr = results_obj.filter(obj => (!obj.result[0].in_the_office && !in_progress_pollers.includes(obj.name)));
   const comments_arr = results_obj.filter(obj => (obj.result[0].comments.length != 0 && !in_progress_pollers.includes(obj.name)));
 
@@ -280,7 +280,6 @@ async function BuildResultsText(results_obj, group_name) {
     });
   }
   // Everyone completed poll section
-  var in_progress_pollers = await getPollersInProgress(group_name);
   if (in_progress_pollers.length == 0) {
     text += '\nEveryone has completed the poll for ' + question_day + ' \u{1f4af}\n';
   }
