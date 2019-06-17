@@ -223,8 +223,7 @@ async function BuildResultsText(results_obj, group_name) {
   CommonService.IsItAfter2PM() ? question_day = 'tomorrow' : question_day = 'today';
 
   // Filtered results arrays
-  console.log(results_obj);
-  const in_for_lunch_arr = results_obj.filter(obj => obj.result.in_for_lunch);
+  const in_for_lunch_arr = results_obj.filter(obj => obj.result[0].in_for_lunch);
   const in_the_office_arr = results_obj.filter(obj => (obj.result[0].in_the_office && !obj.result[0].in_for_lunch));
   const out_of_office_arr = results_obj.filter(obj => !obj.result[0].in_the_office);
   const comments_arr = results_obj.filter(obj => obj.result[0].comments.length != 0);
@@ -243,8 +242,6 @@ async function BuildResultsText(results_obj, group_name) {
   } else if (out_of_office_arr.length == 0) {
     text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
   }
-  console.log(in_for_lunch_arr);
-  console.log(everyone_is_in);
   // In for lunch section
   if (in_for_lunch_arr.length != 0 && !everyone_is_in) {
     text += '\n\u{1f37d} In For Lunch:\n';
