@@ -47,7 +47,8 @@ function pollGroup(group_name, bot) {
 }
 
 // Main function
-async function main(bot) {
+async function Main(controller) {
+  var bot = controller.spawn({});
   var groups = await getAllGroupNames();
   groups.forEach(async (group) => {
     if (group.name == 'TEST') {
@@ -56,4 +57,6 @@ async function main(bot) {
   });
 }
 
-main(bot);
+Main(controller);
+
+module.exports = Main;
