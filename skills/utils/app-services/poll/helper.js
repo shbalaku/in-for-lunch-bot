@@ -238,8 +238,8 @@ async function BuildResultsText(results_obj, group_name) {
   const comments_arr = results_obj.filter(obj => (obj.result[0].comments.length != 0 && !in_progress_pollers.includes(obj.name)));
 
   // Booleans
-  const noone_is_in = results_obj.length == out_of_office_arr.length;
-  const everyone_is_in = results_obj.length == in_for_lunch_arr.length;
+  const noone_is_in = results_obj.length == out_of_office_arr.length && in_progress_pollers == 0;
+  const everyone_is_in = results_obj.length == in_for_lunch_arr.length && in_progress_pollers == 0;
 
   // Noone being in statements
   if (noone_is_in) {
