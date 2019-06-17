@@ -132,6 +132,11 @@ function areTimesValidForPoll(timestamp) {
 async function ValidatePoll(group_name) {
   var deferred = Q.defer();
   timestamp = await CommonService.GetPollTimestamp(group_name);
+  if (timestamp == -1) {
+    // first poll
+    await setPollTimestamp(group_name);
+    deferred.resolve('poll request valid');
+  }
   // Check if time is valid to conduct poll
   areTimesValidForPoll(timestamp)
     .then(async function() {
