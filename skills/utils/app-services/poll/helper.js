@@ -234,7 +234,7 @@ async function BuildResultsText(results_obj, group_name) {
 
   // Noone being in statements
   if (noone_is_in) {
-    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f63f}\n';
+    text += '\nNo-one is in the office today ' + question_day + ' \u{1f63f}\n';
   }
   // Everyone being in statements
   if (everyone_is_in) {
