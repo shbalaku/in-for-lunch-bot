@@ -134,7 +134,7 @@ async function ValidatePoll(group_name) {
   timestamp = await CommonService.GetPollTimestamp(group_name);
   // Check if time is valid to conduct poll
   areTimesValidForPoll(timestamp)
-    .then(function() {
+    .then(async function() {
       // Validate whether a poll is in progress or not
       in_progress_pollers = await getPollersInProgress(group_name);
       if (in_progress_pollers.length > 0) {
