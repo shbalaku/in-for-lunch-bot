@@ -1,5 +1,6 @@
 // Automatically send polls to group members at a specific schedule
 const Q = require('q');
+const Botkit = require('botkit');
 
 /* ENVIRONMENT VARIABLES */
 const TABLE_NAME = process.env.TABLE_NAME;
@@ -47,8 +48,7 @@ function pollGroup(group_name, bot) {
 }
 
 // Main function
-async function Main(controller) {
-  var bot = controller.spawn({});
+async function Main(bot) {
   var groups = await getAllGroupNames();
   groups.forEach(async (group) => {
     if (group.name == 'TEST') {
@@ -57,6 +57,25 @@ async function Main(controller) {
   });
 }
 
-Main(controller);
+//
+// Create bot
+//
 
-module.exports = Main;
+// Get public URL where Cisco Webex Teams will post spaces notifications (webhook registration)
+var public_url = '';
+// Heroku hosting: available if dyno metadata are enabled, https://devcenter.heroku.com/articles/dyno-metadata
+if (process.env.HEROKU_APP_NAME) {
+  public_url = "https://" + process.env.HEROKU_APP_NAME + ".herokuapp.com";
+}
+
+var controller = Botkit.webexbot({
+  log: true,
+  public_address: public_url,
+  access_token: process.env.ACCESS_TOKEN,
+  secret: process.env.SECRET, // this is a RECOMMENDED security setting that checks of incoming payloads originate from Cisco Webex Teams
+  webhook_name: process.env.WEBHOOK_NAME || ('built with BotKit (' + env + ')')
+});
+
+const bot = controller.spawn({});
+
+Main(bot);
