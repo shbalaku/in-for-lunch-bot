@@ -242,7 +242,7 @@ async function BuildResultsText(results_obj, group_name) {
   } else if (out_of_office_arr.length == 0) {
     text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
   }
-  console.log(in_for_lunch);
+  console.log(in_for_lunch_arr);
   console.log(everyone_is_in);
   // In for lunch section
   if (in_for_lunch_arr.length != 0 && !everyone_is_in) {
