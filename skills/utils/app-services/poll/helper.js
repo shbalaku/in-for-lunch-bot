@@ -271,50 +271,43 @@ async function BuildResultsText(results_obj, group_name) {
   const comments_arr = results_obj.filter(obj => (obj.result[0].comments.length != 0 && !in_progress_pollers.includes(obj.name)));
 
   // Booleans
-  const noone_is_in = results_obj.length == out_of_office_arr.length && in_progress_pollers.length == 0;
-  const everyone_is_in = results_obj.length == in_for_lunch_arr.length && in_progress_pollers.length == 0;
+  const noone_is_in_the_office = (results_obj.length == out_of_office_arr.length) && (in_progress_pollers.length == 0);
+  const noone_is_in_for_lunch = (in_for_lunch_arr.length == 0) && (in_progress_pollers.length == 0);
+  const everyone_is_in_for_lunch = (results_obj.length == in_for_lunch_arr.length) && (in_progress_pollers.length == 0);
+  const everyone_is_in_the_office = (results_obj.length == in_the_office_arr.length) && (in_progress_pollers.length == 0);
 
   // Noone being in statements
-  if (noone_is_in) {
-    text += '\nNo-one is in the office today ' + question_day + ' \u{1f63f}\n';
+  if (noone_is_in_for_lunch) {
+    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f63f}\n';
+  } else if (noone_is_in_the_office) {
+    text += '\nNo-one is in the office ' + question_day + ' \u{1f63f}\n';
   }
   // Everyone being in statements
-  if (everyone_is_in) {
+  if (everyone_is_in_for_lunch) {
     text += '\nEveryone is free for lunch ' + question_day + '!\u{1f603}\n';
-  } else if (out_of_office_arr.length == 0) {
+  } else if (everyone_is_in_the_office) {
     text += '\nEveryone is in the office ' + question_day + '! \u{1f4aa}\n';
   }
   // In for lunch section
-  if (in_for_lunch_arr.length != 0 && !everyone_is_in) {
+  if (in_for_lunch_arr.length != 0 && !everyone_is_in_for_lunch) {
     text += '\n\u{1f37d} In For Lunch:\n';
     in_for_lunch_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
   }
   // In the office but not in for lunch section
-  if (in_the_office_arr.length != 0 && !noone_is_in) {
+  if (in_the_office_arr.length != 0 && !noone_is_in_the_office) {
     text += '\n\u{1f3e2} In The Office But Not Free For Lunch:\n';
     in_the_office_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
   }
   // Out of office section
-  if (out_of_office_arr.length != 0 && !noone_is_in) {
+  if (out_of_office_arr.length != 0 && !noone_is_in_the_office) {
     text += '\n\u{1f3d6} Out Of Office:\n';
     out_of_office_arr.forEach(obj => {
       text += '- ' + obj.name + '\n';
     });
-  }
-  // Comments section
-  if (comments_arr.length != 0) {
-    text += '\n\u{1f4ac} Comments:\n';
-    comments_arr.forEach(obj => {
-      text += '- ' + obj.name + ' says: ' + obj.result[0].comments + '\n';
-    });
-  }
-  // Everyone completed poll section
-  if (in_progress_pollers.length == 0) {
-    text += '\nEveryone has completed the poll for ' + question_day + ' \u{1f4af}\n';
   }
   // Display poll timestamp
   timestamp = await CommonService.GetPollTimestamp(group_name);
