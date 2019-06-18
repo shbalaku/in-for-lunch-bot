@@ -227,8 +227,8 @@ function GetPollResults(group_name, user_id) {
   client.connect(function(err) {
     if (err) throw err;
     // get poll results by group_name
-    client.query('SELECT person_name AS name, poll_result AS result FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id!=$2 AND poll_result IS NOT NULL;',
-      [group_name, user_id],
+    client.query('SELECT person_name AS name, poll_result AS result FROM ' + TABLE_NAME + ' WHERE group_name=$1 AND person_id!=$2 AND poll_result!=$3;',
+      [group_name, user_id, {}],
       function(err, res) {
         if (err) throw err;
         client.end(function(err) {
