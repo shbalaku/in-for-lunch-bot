@@ -309,6 +309,17 @@ async function BuildResultsText(results_obj, group_name) {
       text += '- ' + obj.name + '\n';
     });
   }
+  // Comments section
+  if (comments_arr.length != 0) {
+    text += '\n\u{1f4ac} Comments:\n';
+    comments_arr.forEach(obj => {
+      text += '- ' + obj.name + ' says: ' + obj.result[0].comments + '\n';
+    });
+  }
+  // Everyone completed poll section
+  if (in_progress_pollers.length == 0) {
+    text += '\nEveryone has completed the poll for ' + question_day + ' \u{1f4af}\n';
+  }
   // Display poll timestamp
   timestamp = await CommonService.GetPollTimestamp(group_name);
   var d = new Date(timestamp + 1000 * 60 * 60);
