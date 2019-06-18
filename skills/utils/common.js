@@ -17,6 +17,7 @@ service.ValidatePersonInGroup = ValidatePersonInGroup;
 service.GetPollTimestamp = GetPollTimestamp;
 service.IsItAfter12PM = IsItAfter12PM;
 service.PollMember = PollMember;
+service.CleanUpPoll = CleanUpPoll;
 
 module.exports = service;
 
@@ -323,12 +324,32 @@ async function PollMember(requestor_name, member_name, member_id, group_name, bo
         }
       }
     ], {}, 'comments');
-    
+
     // Poll timeout
     convo.setTimeout(1000 * 60 * 20);
     convo.onTimeout(function(convo) {
       convo.say('Too slow! Poll has timed out. To update your answers, please type `update [<group_name>]`.');
       convo.next('stop');
+    });
+  });
+}
+
+/* Clean up poll variables for a group */
+function CleanUpPoll(group_name) {
+  return new Promise(resolve => {
+    // Establish client POSTGRESQL
+    const client = PostgreSQL.CreateClient();
+    client.connect(function(err) {
+      if (err) throw err;
+      // get all group names in table
+      client.query('UPDATE ' + TABLE_NAME + ' SET poll_result=$1, poll_timestamp=$2 WHERE group_name=$3;',
+      [{}, null, group_name], function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          resolve('cleaned poll');
+        });
+      });
     });
   });
 }

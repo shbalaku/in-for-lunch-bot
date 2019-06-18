@@ -149,6 +149,7 @@ async function ValidatePoll(group_name) {
           'Please wait until it has finished to start a new poll \u23f3';
         deferred.reject(error);
       } else {
+        await CommonService.CleanUpPoll(group_name);
         await setPollTimestamp(group_name);
         deferred.resolve('poll request valid');
       }
