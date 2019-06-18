@@ -323,5 +323,12 @@ async function PollMember(requestor_name, member_name, member_id, group_name, bo
         }
       }
     ], {}, 'comments');
+    
+    // Poll timeout
+    convo.setTimeout(1000 * 60 * 20);
+    convo.onTimeout(function(convo) {
+      convo.say('Too slow! Poll has timed out. To update your answers, please type `update [<group_name>]`.');
+      convo.next('stop');
+    });
   });
 }
