@@ -147,7 +147,7 @@ async function ValidatePoll(group_name) {
       if (in_progress_pollers.length > 0) {
         var error = '\u274c Poll request denied. A poll is currently in progress. ' +
           'Please wait until it has finished to start a new poll \u23f3' +
-          ' If you missed the last poll, please use the `update ' + group_name +
+          '\n\nIf you missed the last poll, please type `update ' + group_name +
           '` to complete it.';
         deferred.reject(error);
       } else {
