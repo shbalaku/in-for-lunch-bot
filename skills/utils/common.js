@@ -304,7 +304,9 @@ async function PollMember(requestor_name, member_name, member_id, group_name, bo
         pattern: bot.utterances.no,
         callback: async function(response, convo) {
           await savePollResult(result, member_id, group_name);
-          convo.say('Thank you for your response! Poll has ended.');
+          var end_msg = 'Thank you for your response! Poll has ended. To see the results of the poll, ' +
+            'please type `results ' + group_name + '`.';
+          convo.say(end_msg);
           convo.next('stop');
         }
       },
@@ -318,7 +320,9 @@ async function PollMember(requestor_name, member_name, member_id, group_name, bo
           } else {
             result.comments = response.text;
             await savePollResult(result, member_id, group_name);
-            convo.say('Thank you for your response! Poll has ended.');
+            var end_msg = 'Thank you for your response! Poll has ended. To see the results of the poll, ' +
+              'please type `results ' + group_name + '`.';
+            convo.say(end_msg);
             convo.next('stop');
           }
         }
@@ -328,7 +332,7 @@ async function PollMember(requestor_name, member_name, member_id, group_name, bo
     // Poll timeout
     convo.setTimeout(1000 * 60 * 20);
     convo.onTimeout(function(convo) {
-      convo.say('Too slow! Poll has timed out. To update your answers, please type `update [<group_name>]`.');
+      convo.say('Too slow! Poll has timed out. To update your answers, please type `update ' + group_name + '`.');
       convo.next('stop');
     });
   });

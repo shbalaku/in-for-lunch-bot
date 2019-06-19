@@ -146,7 +146,9 @@ async function ValidatePoll(group_name) {
       in_progress_pollers = await getPollersInProgress(group_name);
       if (in_progress_pollers.length > 0) {
         var error = '\u274c Poll request denied. A poll is currently in progress. ' +
-          'Please wait until it has finished to start a new poll \u23f3';
+          'Please wait until it has finished to start a new poll \u23f3' +
+          ' If you missed the last poll, please use the `update ' + group_name +
+          '` to complete it.';
         deferred.reject(error);
       } else {
         await CommonService.CleanUpPoll(group_name);
