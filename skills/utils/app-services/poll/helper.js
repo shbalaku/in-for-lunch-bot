@@ -99,33 +99,36 @@ function ValidatePollInput(input, user_id) {
   return deferred.promise;
 }
 
-/**/
-function areTimesValidForPoll(timestamp) {
+/* Helper function to check if times are valid for poll */
+function areTimesValidForPoll(group_name, timestamp) {
   var deferred = Q.defer();
-  // var now = new Date();
-  // now = new Date(now.getTime() + 1000 * 60 * 60);
-  // // Reject poll on Friday afternoon, Saturday or on a Sunday Morning
-  // var day_now = now.getUTCDay();
-  // var hour_now = now.getUTCHours();
-  // var reject_weekend = (day_now == 5 && hour_now >= 12) || (day_now == 6) || (day_now == 7 && hour_now <= 12);
-  // if (reject_weekend) {
-  //   var err = '\u274c Polls are not allowed to be conducted on Friday afternoons, Saturdays and Sunday Mornings.' +
-  //     ' Please try again either on Sunday afternoon or Monday morning.';
-  //   deferred.reject(err);
-  // } else {
-  //   // Reject poll if already conducted in the afternoon. Advise to try again in the morning
-  //   var d = new Date(timestamp + 1000 * 60 * 60);
-  //   var d_day = d.getUTCDay();
-  //   var d_hour = d.getUTCHours();
-  //   var reject_repetiton = (d_hour >= 12) || (d_hour <= 5) && (d_day == day_now);
-  //   if (reject_repetiton) {
-  //     var err = '\u274c Poll has already been conducted for the afternoon. Please wait until ' +
-  //       '6 AM tomorrow morning to start a new poll.';
-  //     deferred.reject(err);
-  //   } else {
-  //     deferred.resolve('poll valid');
-  //   }
-  // }
+  // GET TIME NOW
+  var now = new Date(new Date().getTime() + 1000 * 60 * 60);
+  var day_now = now.getUTCDay(); var hour_now = now.getUTCHours();
+  // NO-POLL ZONE (FROM FRIDAY 12PM TO SUNDAY 12PM)
+  var weekend = (day_now == 5 && hour_now >= 12) || (day_now == 6) || (day_now == 0 && hour_now <= 12);
+  if (weekend) {
+    var err = '\u274c Polls are not allowed to be conducted on Fridays (12 noon onwards),' +
+      ' Saturdays and Sundays (up until 12 noon). Please try again later.';
+    deferred.reject(err);
+  }
+  // WAS LAST POLL DONE IN THE MORNING OR AFTERNOON/EVENING
+  var last_poll = new Date(timestamp + 1000 * 60 * 60); var last_poll_hour = last_poll.getUTCHours();
+  var morning_last_poll = last_poll_hour >= 0 && last_poll_hour < 12; var morning_now = hour_now >= 0 && hour_now < 12;
+  var afternoon_last_poll = last_poll_hour >= 12 && last_poll_hour <= 24; var afternoon_now = hour_now >= 12 && hour_now <= 24;
+  // FLOW CONTROL FOR MORNING VS AFTERNOON/EVENING
+  if (morning_last_poll && morning_now) {
+    var err = '\u274c Poll request denied. A poll has already been conducted for the morning.' +
+      ' Please wait until the afternoon to conduct the next poll.\n\n' +
+      ' Meanwhile, you can update your responses for the current poll by typing: `update ' + group_name + '`.';
+    deferred.reject(err);
+  }
+  if (afternoon_last_poll && afternoon_now) {
+    var err = '\u274c Poll request denied. A poll has already been conducted for the afternoon.' +
+      ' Please wait until tomorrow morning to conduct the next poll.\n\n' +
+      ' Meanwhile, you can update your responses for the current poll by typing: `update ' + group_name + '`.';
+    deferred.reject(err);
+  }
   deferred.resolve('poll valid');
   return deferred.promise;
 }
@@ -139,22 +142,21 @@ async function ValidatePoll(group_name) {
     await setPollTimestamp(group_name);
     deferred.resolve('poll request valid');
   }
+  // Validate whether a poll is in progress or not
+  in_progress_pollers = await getPollersInProgress(group_name);
+  if (in_progress_pollers.length > 0) {
+    var error = '\u274c Poll request denied. A poll is currently in progress. ' +
+      'Please wait until it has finished to start a new poll \u23f3' +
+      '\n\nIf you missed the last poll, please type `update ' + group_name +
+      '` to complete it.';
+    deferred.reject(error);
+  }
   // Check if time is valid to conduct poll
-  areTimesValidForPoll(timestamp)
+  areTimesValidForPoll(group_name, timestamp)
     .then(async function() {
-      // Validate whether a poll is in progress or not
-      in_progress_pollers = await getPollersInProgress(group_name);
-      if (in_progress_pollers.length > 0) {
-        var error = '\u274c Poll request denied. A poll is currently in progress. ' +
-          'Please wait until it has finished to start a new poll \u23f3' +
-          '\n\nIf you missed the last poll, please type `update ' + group_name +
-          '` to complete it.';
-        deferred.reject(error);
-      } else {
-        await CommonService.CleanUpPoll(group_name);
-        await setPollTimestamp(group_name);
-        deferred.resolve('poll request valid');
-      }
+      await CommonService.CleanUpPoll(group_name);
+      await setPollTimestamp(group_name);
+      deferred.resolve('poll request valid');
     })
     .catch(function(error) {
       deferred.reject(error);
