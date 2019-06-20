@@ -280,11 +280,12 @@ async function BuildResultsText(results_obj, group_name) {
   const everyone_is_in_the_office = (results_obj.length == in_the_office_arr.length) && (in_progress_pollers.length == 0);
 
   // Noone being in statements
-  if (noone_is_in_for_lunch) {
-    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f63f}\n';
-  } else if (noone_is_in_the_office) {
+  if (noone_is_in_the_office) {
     text += '\nNo-one is in the office ' + question_day + ' \u{1f63f}\n';
+  } else if (noone_is_in_for_lunch) {
+    text += '\nNo-one is free for lunch ' + question_day + ' \u{1f63f}\n';
   }
+
   // Everyone being in statements
   if (everyone_is_in_for_lunch) {
     text += '\nEveryone is free for lunch ' + question_day + '!\u{1f603}\n';
