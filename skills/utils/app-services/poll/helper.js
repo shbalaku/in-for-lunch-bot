@@ -138,18 +138,9 @@ async function ValidatePoll(group_name) {
   var deferred = Q.defer();
   timestamp = await CommonService.GetPollTimestamp(group_name);
   if (timestamp == -1) {
-    // first poll
+    // First poll
     await setPollTimestamp(group_name);
     deferred.resolve('poll request valid');
-  }
-  // Validate whether a poll is in progress or not
-  in_progress_pollers = await getPollersInProgress(group_name);
-  if (in_progress_pollers.length > 0) {
-    var error = '\u274c Poll request denied. A poll is currently in progress. ' +
-      'Please wait until it has finished to start a new poll \u23f3' +
-      '\n\nIf you missed the last poll, please type `update ' + group_name +
-      '` to complete it.';
-    deferred.reject(error);
   }
   // Check if time is valid to conduct poll
   areTimesValidForPoll(group_name, timestamp)
