@@ -8,10 +8,7 @@ function Controller(controller) {
   CommonService.GetMembersByGroupName('TEST')
     .then(function(members) {
       members.forEach(member => {
-        console.log(member);
-        bot.startPrivateConversationWithPersonId(member.id, function(err, convo) {
-          convo.say('Automatically generated message');
-        });
+        CommonService.PollMember('AutoPoller', member.name, member.id, 'TEST', bot);
       });
     });
 }
