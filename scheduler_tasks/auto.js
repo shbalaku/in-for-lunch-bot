@@ -1,5 +1,5 @@
 /* Script to automatically generate polls */
-const CommonService = require('./utils/common');
+const CommonService = require('./../skills/utils/common');
 
 module.exports = Controller;
 
