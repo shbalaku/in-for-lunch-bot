@@ -5,12 +5,13 @@ module.exports = Controller;
 
 function Controller(controller) {
   controller.spawn({}, function(bot) {
-    bot.say('Automatically generated message');
-    // CommonService.GetMembersByGroupName('TEST')
-    //   .then(function(members) {
-    //     members.forEach(member => {
-    //
-    //     });
-    //   });
+    CommonService.GetMembersByGroupName('TEST')
+      .then(function(members) {
+        members.forEach(member => {
+          bot.startPrivateConversationWithPersonId(member.id, function(err, convo) {
+            convo.say('Automatically generated message');
+          });
+        });
+      });
   });
 }
