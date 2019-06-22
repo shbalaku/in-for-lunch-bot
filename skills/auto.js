@@ -5,7 +5,7 @@ module.exports = Controller;
 
 function Controller(controller) {
   var bot = controller.spawn({});
-  controller.trigger('auto_poll', [bot]);
+  bot.trigger('auto_poll', [bot]);
   controller.on('auto_poll', function(bot) {
     CommonService.GetMembersByGroupName('TEST')
       .then(function(members) {
