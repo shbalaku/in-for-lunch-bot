@@ -1,11 +1,16 @@
 /* Script to automatically generate polls */
+const CommonService = require('./utils/common');
+
 module.exports = Controller;
 
 function Controller(controller) {
-  //
-  // Command: hello world
-  //
-  controller.hears('hello world', 'direct_message,direct_mention', function(bot, message) {
-    bot.reply(message, 'Hey there!');
+  controller.spawn({}, function(bot) {
+    bot.say('Automatically generated message');
+    // CommonService.GetMembersByGroupName('TEST')
+    //   .then(function(members) {
+    //     members.forEach(member => {
+    //
+    //     });
+    //   });
   });
 }
