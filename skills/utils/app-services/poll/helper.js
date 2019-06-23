@@ -79,6 +79,10 @@ function areTimesValidForPoll(group_name, timestamp) {
       ' Saturdays and Sundays (up until 12 noon). Please try again later.';
     deferred.reject(err);
   }
+  // IF THIS IS FIRST POLL THEN TIMESTAMP WILL BE -1
+  if (timestamp == -1) {
+    deferred.resolve('poll valid');
+  }
   // WAS LAST POLL DONE IN THE MORNING OR AFTERNOON/EVENING
   var last_poll = new Date(timestamp + 1000 * 60 * 60); var last_poll_hour = last_poll.getUTCHours();
   var morning_last_poll = last_poll_hour >= 0 && last_poll_hour < 12; var morning_now = hour_now >= 0 && hour_now < 12;
@@ -137,11 +141,6 @@ function ValidatePollInput(input, user_id) {
 async function ValidatePoll(group_name) {
   var deferred = Q.defer();
   timestamp = await CommonService.GetPollTimestamp(group_name);
-  if (timestamp == -1) {
-    // First poll
-    await setPollTimestamp(group_name);
-    deferred.resolve('poll request valid');
-  }
   // Check if time is valid to conduct poll
   areTimesValidForPoll(group_name, timestamp)
     .then(async function() {
