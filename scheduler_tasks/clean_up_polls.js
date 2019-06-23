@@ -30,7 +30,7 @@ function getAllGroupNames() {
 }
 
 // Main function
-function main() {
+async function main() {
   var groups = await getAllGroupNames();
   console.log(groups);
   groups.forEach( async (group) => {
