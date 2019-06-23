@@ -32,11 +32,14 @@ function getAllGroupNames() {
 // Main function
 function main() {
   var groups = await getAllGroupNames();
+  console.log(groups);
   groups.forEach( async (group) => {
     timestamp = await CommonService.GetPollTimestamp(group.name);
     if (timestamp != -1) {
       var time_passed = Date.now() - timestamp;
-      if (time_passed > 1000 * 60 * 60 * 12) {
+      console.log(time_passed);
+      if (time_passed >= 1000 * 60 * 60 * 12) {
+        console.log('cleaning up poll');
         await CommonService.CleanUpPoll(group.name);
       }
     }
