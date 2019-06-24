@@ -9,6 +9,9 @@ const TABLE_NAME = process.env.TABLE_NAME;
 const PostgreSQL = require(PATH + '/skills/utils/postgres');
 const CommonService = require(PATH + '/skills/utils/common');
 
+/* CONSTANTS */
+const CLEAN_UP_INTERVAL = 1000 * 60 * 60 * 12;
+
 var service = {};
 
 service.ValidatePollInput = ValidatePollInput;
@@ -81,6 +84,11 @@ function areTimesValidForPoll(group_name, timestamp) {
   }
   // IF THIS IS FIRST POLL THEN TIMESTAMP WILL BE -1
   if (timestamp == -1) {
+    deferred.resolve('poll valid');
+  }
+  // CHECK IF LAST POLL WAS OVER 12 HOURS AGO - IF SO THEN A NEW POLL IS VALID
+  const time_passed = Date.now() - timestamp;
+  if (time_passed >= CLEAN_UP_INTERVAL) {
     deferred.resolve('poll valid');
   }
   // WAS LAST POLL DONE IN THE MORNING OR AFTERNOON/EVENING
