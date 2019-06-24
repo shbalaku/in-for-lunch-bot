@@ -10,10 +10,8 @@ var service = {};
 
 service.GetPersonByCEC = GetPersonByCEC;
 service.GetPersonById = GetPersonById;
-service.GetPrimaryGroupById = GetPrimaryGroupById;
 service.GetMembersByGroupName = GetMembersByGroupName;
-service.ValidateGroup = ValidateGroup;
-service.ValidatePersonInGroup = ValidatePersonInGroup;
+service.ValidateGroupAndUser = ValidateGroupAndUser;
 service.GetPollTimestamp = GetPollTimestamp;
 service.IsItAfter12PM = IsItAfter12PM;
 service.PollMember = PollMember;
@@ -68,31 +66,8 @@ function savePollResult(result, member_id, group_name) {
   });
 }
 
-/* Helper function to get person details by CEC */
-function GetPersonByCEC(cec) {
-  return new Promise(resolve => {
-    var personEmail = cec + EMAIL_DOMAIN;
-    spark.people.list(personEmail, function(err, res) {
-      if (err) throw err;
-      resolve(JSON.parse(res));
-    });
-  });
-}
-
-/* Helper function to retrieve admin of lunch group's details */
-function GetPersonById(id) {
-  return new Promise(resolve => {
-    var details = {};
-    spark.people.get(id, function(err, res) {
-      if (err) throw err;
-      var person = JSON.parse(res);
-      resolve(person.firstName);
-    });
-  });
-}
-
 /* Helper function to get user's primary group name */
-function GetPrimaryGroupById(id) {
+function getPrimaryGroupById(id) {
   var deferred = Q.defer();
   // Establish client POSTGRESQL
   const client = PostgreSQL.CreateClient();
@@ -117,30 +92,8 @@ function GetPrimaryGroupById(id) {
   return deferred.promise;
 }
 
-/* Helper function to retrieve member details of a group */
-function GetMembersByGroupName(group_name) {
-  var deferred = Q.defer();
-  // Establish client POSTGRESQL
-  const client = PostgreSQL.CreateClient();
-  client.connect(function(err) {
-    if (err) throw err;
-    // select persons as member of group and their member status
-    client.query('SELECT person_id AS id, person_name AS name FROM ' + TABLE_NAME + ' WHERE group_name=$1;',
-      [group_name],
-      function(err, res) {
-        if (err) throw err;
-        client.end(function(err) {
-          if (err) throw err;
-          var members = res.rows;
-          deferred.resolve(members);
-        });
-      });
-  });
-  return deferred.promise;
-}
-
 /* Helper function to validate group in lunch groups table */
-function ValidateGroup(group_name) {
+function validateGroup(group_name) {
   var deferred = Q.defer();
   // Establish client POSTGRESQL
   const client = PostgreSQL.CreateClient();
@@ -163,7 +116,7 @@ function ValidateGroup(group_name) {
 }
 
 /* Helper function to validate member belongs to lunch group */
-function ValidatePersonInGroup(user_id, group_name) {
+function validatePersonInGroup(user_id, group_name) {
   var deferred = Q.defer();
   // Establish client POSTGRESQL
   const client = PostgreSQL.CreateClient();
@@ -183,6 +136,85 @@ function ValidatePersonInGroup(user_id, group_name) {
       });
     });
   });
+  return deferred.promise;
+}
+
+/* Helper function to get person details by CEC */
+function GetPersonByCEC(cec) {
+  return new Promise(resolve => {
+    var personEmail = cec + EMAIL_DOMAIN;
+    spark.people.list(personEmail, function(err, res) {
+      if (err) throw err;
+      resolve(JSON.parse(res));
+    });
+  });
+}
+
+/* Helper function to retrieve admin of lunch group's details */
+function GetPersonById(id) {
+  return new Promise(resolve => {
+    var details = {};
+    spark.people.get(id, function(err, res) {
+      if (err) throw err;
+      var person = JSON.parse(res);
+      resolve(person.firstName);
+    });
+  });
+}
+
+/* Helper function to retrieve member details of a group */
+function GetMembersByGroupName(group_name) {
+  var deferred = Q.defer();
+  // Establish client POSTGRESQL
+  const client = PostgreSQL.CreateClient();
+  client.connect(function(err) {
+    if (err) throw err;
+    // select persons as member of group and their member status
+    client.query('SELECT person_id AS id, person_name AS name FROM ' + TABLE_NAME + ' WHERE group_name=$1;',
+      [group_name],
+      function(err, res) {
+        if (err) throw err;
+        client.end(function(err) {
+          if (err) throw err;
+          var members = res.rows;
+          deferred.resolve(members);
+        });
+      });
+  });
+  return deferred.promise;
+}
+
+/* Helper function to validate poke/update/poll commands */
+function ValidateGroupAndUser(input, user_id) {
+  var deferred = Q.defer();
+  var group_name = input.trim().replace(/[^\x00-\x7F]/g, "").toUpperCase();
+  if (group_name.length == 0) {
+    // set group_name as primary group for user
+    getPrimaryGroupById(user_id)
+      .then(function(primary_group) {
+        deferred.resolve(primary_group);
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
+  } else {
+    // Validate group
+    validateGroup(group_name)
+      .then(function() {
+        // Validate requestor
+        validatePersonInGroup(user_id, group_name)
+          .then(function() {
+            // Validation complete
+            deferred.resolve(group_name);
+          })
+          .catch(function(error) {
+            deferred.reject(error);
+          });
+      })
+      .catch(function(error) {
+        deferred.reject(error);
+      });
+  }
   return deferred.promise;
 }
 

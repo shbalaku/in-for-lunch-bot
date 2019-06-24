@@ -19,7 +19,7 @@ function PokeGroup(bot, message) {
   var deferred = Q.defer();
   var user_id = message.data.personId;
   var input = message.match[1];
-  HelperService.ValidateInput(input, user_id)
+  CommonService.ValidateGroupAndUser(input, user_id)
     .then(function(group_name){
       HelperService.IsPokeValid(group_name)
         .then(async function() {

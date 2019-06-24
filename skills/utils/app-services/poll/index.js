@@ -20,7 +20,7 @@ function PollGroup(bot, message) {
   var deferred = Q.defer();
   var user_id = message.data.personId;
   var input = message.match[1];
-  HelperService.ValidatePollInput(input, user_id)
+  CommonService.ValidateGroupAndUser(input, user_id)
     .then(async function(group_name) {
       // Validate whether all members have joined the group before starting the poll
       HelperService.MembersHaveJoined(group_name)
