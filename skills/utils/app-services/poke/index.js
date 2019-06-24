@@ -28,8 +28,15 @@ function PokeGroup(bot, message) {
           var in_progress_pollers = await HelperService.GetPollersInProgressIDs(group_name);
           if (in_progress_pollers.length != 0) {
             var requestor_name = await CommonService.GetPersonById(user_id);
-            in_progress_pollers.forEach(async (poller) => {
-              await HelperService.PokeMember(requestor_name, poller.id, group_name);
+            // Create poke message
+            var message = '\u{1f449} ' + requestor_name + ' poked you!' +
+              ' To complete the latest poll, please type `update ' + group_name + '`.';
+            // Send pokes
+            in_progress_pollers.forEach(poller => {
+              bot.startPrivateConversationWithPersonId(poller.id, function(err, convo) {
+                if (err) console.error(err);
+                convo.say(message);
+              });
             });
             var text = 'Pokes have been sent.';
             deferred.resolve(text);

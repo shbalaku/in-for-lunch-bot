@@ -1,7 +1,5 @@
 // Helper Functions for Poke Service
 const Q = require('q');
-const CiscoSpark = require('node-ciscospark');
-const spark = new CiscoSpark(process.env.ACCESS_TOKEN);
 
 /* ENVIRONMENT VARIABLES */
 const PATH = process.env.PATH;
@@ -19,7 +17,6 @@ var service = {};
 service.ValidateInput = ValidateInput;
 service.IsPokeValid = IsPokeValid;
 service.GetPollersInProgressIDs = GetPollersInProgressIDs;
-service.PokeMember = PokeMember;
 
 module.exports = service;
 
@@ -94,22 +91,6 @@ function GetPollersInProgressIDs(group_name) {
             resolve(res.rows);
           });
         });
-    });
-  });
-}
-
-/* Helper function to send a poke to a user */
-function PokeMember(requestor_name, member_id, group_name) {
-  return new Promise(resolve => {
-    // Create poke message
-    var message = '👉 ' + requestor_name + ' poked you!' +
-      ' To complete the latest poll, please type `update ' + group_name + '`.';
-    spark.messages.create({
-      toPersonId: member_id,
-      text: message
-    }, function (err) {
-      if (err) console.error(err);
-      resolve('poke sent');
     });
   });
 }
