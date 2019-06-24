@@ -59,7 +59,7 @@ function GetPollResults(message) {
   var deferred = Q.defer();
   var user_id = message.data.personId;
   var input = message.match[1];
-  HelperService.ValidateResultsInput(input, user_id)
+  CommonService.ValidateGroupAndUser(input, user_id)
     .then(function(group_name) {
       HelperService.GetPollResults(group_name, user_id)
         .then(function(results_obj) {
