@@ -106,7 +106,7 @@ function PokeMember(requestor_name, member_id, group_name) {
       ' To complete the latest poll, please type `update ' + group_name + '`.';
     spark.messages.create({
       toPersonId: member_id,
-      markdown: message
+      text: message
     }, function (err) {
       if (err) console.error(err);
       resolve('poke sent');
