@@ -6,6 +6,7 @@ const GroupService = require('./utils/app-services/group/index');
 const ListGroupService = require('./utils/app-services/list/index');
 const PollGroupService = require('./utils/app-services/poll/index');
 const UpdatePollService = require('./utils/app-services/update/index');
+const PokeGroupService = require('./utils/app-services/poke/index');
 
 module.exports = Controller;
 
@@ -36,7 +37,7 @@ function Controller(controller) {
       });
   });
   //
-  // Command: poll <group>
+  // Command: poll [<group>]
   //
   controller.hears('poll(.*)', 'direct_message,direct_mention', function(bot, message) {
     PollGroupService.PollGroup(bot, message)
@@ -48,7 +49,7 @@ function Controller(controller) {
       });
   });
   //
-  // Command: results <group>
+  // Command: results [<group>]
   //
   controller.hears('results(.*)', 'direct_message,direct_mention', function(bot, message) {
     PollGroupService.GetPollResults(message)
@@ -72,10 +73,22 @@ function Controller(controller) {
       });
   });
   //
-  // Command: update <group>
+  // Command: update [<group>]
   //
   controller.hears('update(.*)', 'direct_message,direct_mention', function(bot, message) {
     UpdatePollService.UpdatePoll(bot, message)
+      .then(function(text) {
+        bot.reply(message, text);
+      })
+      .catch(function(error) {
+        bot.reply(message, error);
+      });
+  });
+  //
+  // Command: poke [<group>]
+  //
+  controller.hears('poke(.*)', 'direct_message,direct_mention', function(bot, message) {
+    PokeGroupService.PokeGroup(bot, message)
       .then(function(text) {
         bot.reply(message, text);
       })

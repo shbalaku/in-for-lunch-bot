@@ -1,7 +1,5 @@
 // Create Lunch Group Services
 const Q = require('q');
-const CiscoSpark = require('node-ciscospark');
-const spark = new CiscoSpark(process.env.ACCESS_TOKEN);
 
 /* ENVIRONMENT VARIABLES */
 const PATH = process.env.PATH;
