@@ -102,11 +102,11 @@ function GetPollersInProgressIDs(group_name) {
 function PokeMember(requestor_name, member_id, group_name) {
   return new Promise(resolve => {
     // Create poke message
-    var message = '\u{1f449}' + requestor_name + ' poked you!' +
+    var message = '\u{1f449} ' + requestor_name + ' poked you!' +
       ' To complete the latest poll, please type `update ' + group_name + '`.';
     spark.messages.create({
       toPersonId: member_id,
-      text: message
+      markdown: message
     }, function (err) {
       if (err) console.error(err);
       resolve('poke sent');
